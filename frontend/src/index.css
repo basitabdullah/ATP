@@ -1,0 +1,135 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* RTL and Urdu Font Styles */
+* {
+  direction: rtl;
+  text-align: right;
+}
+
+body {
+  font-family: 'Noto Nastaliq Urdu', Arial, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Input and form styles for RTL */
+input, textarea {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Button styles */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Card hover effects */
+.news-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.news-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+  
+  h3 {
+    font-size: 1.1rem;
+  }
+}
+
+/* Loading animation */
+.loading-dots {
+  display: inline-block;
+  animation: loading 1.4s infinite ease-in-out both;
+}
+
+.loading-dots:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Urdu text improvements */
+.urdu-text {
+  font-family: 'Noto Nastaliq Urdu', Arial, sans-serif;
+  line-height: 1.8;
+  word-spacing: 0.1em;
+}
+
+/* Focus styles for accessibility */
+*:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Custom border styles */
+.border-blue-600 {
+  border-color: #2563eb;
+}
+
+/* Smooth transitions */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.transition-shadow {
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

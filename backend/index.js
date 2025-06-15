@@ -7,6 +7,7 @@ import cors from "cors";
 // Import routes
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import newsRoutes from "./routes/newsRoutes.js";
 
 dotenv.config();
 
@@ -20,9 +21,13 @@ app.use(cors({
   credentials: true
 }));
 
+// Serve uploaded files statically
+app.use("/uploads", express.static("uploads"));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/news", newsRoutes);
 
 // Health check route
 app.get("/api/health", (req, res) => {

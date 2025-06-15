@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
+import useAuthStore from '../stores/authStore';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,9 +14,11 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+
+  // Get auth store functions
+  const { signup, isLoading, error: authError, clearError } = useAuthStore();
 
   const handleChange = (e) => {
     setFormData({
@@ -29,17 +32,37 @@ const Register = () => {
         [e.target.name]: ''
       });
     }
+    // Clear auth error when user types
+    if (authError) {
+      clearError();
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'پاس ورڈ میں میل نہیں کھاتا';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'پہلا نام ضروری ہے';
     }
 
-    if (formData.password.length < 6) {
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'آخری نام ضروری ہے';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'ای میل ایڈریس ضروری ہے';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'ای میل ایڈریس درست نہیں ہے';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'پاس ورڈ ضروری ہے';
+    } else if (formData.password.length < 6) {
       newErrors.password = 'پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'پاس ورڈ میں میل نہیں کھاتا';
     }
 
     setErrors(newErrors);
@@ -53,14 +76,24 @@ const Register = () => {
       return;
     }
 
-    setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate to login after successful registration
-      navigate('/login');
-    }, 2000);
+    try {
+      const result = await signup(
+        formData.firstName,
+        formData.lastName,
+        formData.email,
+        formData.password,
+        formData.phone
+      );
+
+      if (result.success) {
+        // Show success message
+        alert('اکاؤنٹ کامیابی سے بن گیا! خوش آمدید!');
+        // Navigate to home
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+    }
   };
 
   return (
@@ -75,6 +108,13 @@ const Register = () => {
 
         {/* Register Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Display Auth Error */}
+          {authError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-right">
+              {authError}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -88,12 +128,17 @@ const Register = () => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-right"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-right ${
+                      errors.firstName ? 'border-red-300' : 'border-gray-300'
+                    }`}
                     placeholder="پہلا نام"
                     required
                   />
                   <User className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 </div>
+                {errors.firstName && (
+                  <p className="text-red-500 text-sm mt-1 text-right">{errors.firstName}</p>
+                )}
               </div>
 
               <div>
@@ -106,12 +151,17 @@ const Register = () => {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-right"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-right ${
+                      errors.lastName ? 'border-red-300' : 'border-gray-300'
+                    }`}
                     placeholder="آخری نام"
                     required
                   />
                   <User className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 </div>
+                {errors.lastName && (
+                  <p className="text-red-500 text-sm mt-1 text-right">{errors.lastName}</p>
+                )}
               </div>
             </div>
 
@@ -126,12 +176,17 @@ const Register = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-right"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-right ${
+                    errors.email ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="آپ کا ای میل داخل کریں"
                   required
                 />
                 <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1 text-right">{errors.email}</p>
+              )}
             </div>
 
             {/* Phone Field */}
@@ -147,7 +202,6 @@ const Register = () => {
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-right"
                   placeholder="آپ کا فون نمبر داخل کریں"
-                  required
                 />
                 <Phone className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
               </div>
@@ -232,10 +286,10 @@ const Register = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   اکاؤنٹ بن رہا ہے...

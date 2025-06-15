@@ -1,9 +1,11 @@
 import AdminLayout from './AdminLayout';
 import { useLanguage, translations } from '../context/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   const stats = [
     {
@@ -157,6 +159,20 @@ const AdminDashboard = () => {
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <h2 className="text-xl font-bold text-gray-800 mb-4">{t.quickActions}</h2>
               <div className="space-y-3">
+                <button 
+                  onClick={() => navigate('/')}
+                  className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  {language === 'ur' ? (
+                    <>
+                      <span>ہوم پیج دیکھیں</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Go to Home</span>
+                    </>
+                  )}
+                </button>
                 <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
                   {t.addNews}
                 </button>

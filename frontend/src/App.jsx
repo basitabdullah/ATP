@@ -14,27 +14,35 @@ import AdminCategories from './components/AdminCategories';
 
 import AdminSettings from './components/AdminSettings';
 import { LanguageProvider } from './context/LanguageContext';
+import useAuthStore from './stores/authStore';
+import { apiJSON } from './lib/axios';
 
 // Main News Component
 const NewsApp = () => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedNews, setSelectedNews] = useState(null);
+  const [error, setError] = useState(null);
 
-  const sampleNews = [
+  // Initialize auth state
+  const { initializeAuth } = useAuthStore();
+
+  // Static data for important news section
+  const staticFeaturedNews = {
+    id: 'featured-1',
+    title: 'ATP میں نئے ٹریڈنگ فیچرز کا اضافہ - خودکار تجارت میں انقلاب',
+    excerpt: 'ATP پلیٹ فارم میں جدید ترین AI الگورتھم کے ساتھ نئے ٹریڈنگ ٹولز شامل کیے گئے ہیں۔ یہ فیچرز صارفین کو بہتر تجارتی فیصلے کرنے میں مدد کریں گے۔',
+    image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
+    category: 'ٹیکنالوجی',
+    source: 'ATP نیوز',
+    time: 'PM 11:11 2025، 10 جون',
+    views: '15.2K',
+    comments: 45
+  };
+
+  const staticImportantNews = [
     {
-      id: 1,
-      title: 'ATP میں نئے ٹریڈنگ فیچرز کا اضافہ - خودکار تجارت میں انقلاب',
-      excerpt: 'ATP پلیٹ فارم میں جدید ترین AI الگورتھم کے ساتھ نئے ٹریڈنگ ٹولز شامل کیے گئے ہیں۔ یہ فیچرز صارفین کو بہتر تجارتی فیصلے کرنے میں مدد کریں گے۔',
-      image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'ٹیکنالوجی',
-      source: 'ATP نیوز',
-      time: 'PM 11:11 2025، 10 جون',
-      views: '15.2K',
-      comments: 45
-    },
-    {
-      id: 2,
+      id: 'important-1',
       title: 'کرپٹو کرنسی میں تیزی سے اضافہ - ATP صارفین کو نئے مواقع',
       excerpt: 'آج کے دن کرپٹو مارکیٹ میں نمایاں بہتری دیکھی گئی۔ ATP کے تجزیہ کاروں کے مطابق یہ بڑھوتری مستحکم ہے۔',
       image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -45,7 +53,7 @@ const NewsApp = () => {
       comments: 32
     },
     {
-      id: 3,
+      id: 'important-2',
       title: 'اسٹاک مارکیٹ کی کارکردگی - ATP کے تجزیے اور توقعات',
       excerpt: 'مقامی اور بین الاقوامی اسٹاک مارکیٹس میں مثبت رجحان۔ ATP کے ماہرین کی تفصیلی رپورٹ۔',
       image: 'https://images.pexels.com/photos/6801645/pexels-photo-6801645.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -56,7 +64,7 @@ const NewsApp = () => {
       comments: 28
     },
     {
-      id: 4,
+      id: 'important-3',
       title: 'آٹو ٹریڈنگ میں AI کا کردار - مستقبل کے تجارتی طریقے',
       excerpt: 'مصنوعی ذہانت کا استعمال کرتے ہوئے ATP کے نئے ٹریڈنگ بوٹس کی کارکردگی کا جائزہ۔',
       image: 'https://images.pexels.com/photos/8728380/pexels-photo-8728380.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -65,39 +73,67 @@ const NewsApp = () => {
       time: 'PM 7:15 2025، 10 جون',
       views: '8.1K',
       comments: 19
-    },
-    {
-      id: 5,
-      title: 'مالی منصوبہ بندی میں ATP کے جدید ٹولز کا استعمال',
-      excerpt: 'ذاتی مالیات کے بہتر انتظام کے لیے ATP کے نئے فیچرز اور ان کے فوائد۔',
-      image: 'https://images.pexels.com/photos/6801874/pexels-photo-6801874.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'مالی منصوبہ بندی',
-      source: 'ATP مشیر',
-      time: 'PM 6:45 2025، 10 جون',
-      views: '7.3K',
-      comments: 15
-    },
-    {
-      id: 6,
-      title: 'نئے صارفین کے لیے ATP کی مکمل گائیڈ',
-      excerpt: 'ATP پلیٹ فارم کا استعمال شروع کرنے کے لیے مکمل ہدایات اور بہترین طریقے۔',
-      image: 'https://images.pexels.com/photos/6801874/pexels-photo-6801874.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'تعلیم',
-      source: 'ATP گائیڈ',
-      time: 'PM 5:30 2025، 10 جون',
-      views: '6.8K',
-      comments: 22
     }
   ];
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setNews(sampleNews);
-      setLoading(false);
-    }, 1000);
+  // Fetch news from API
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch published news for public display
+      const response = await apiJSON.get('/news/public', {
+        params: {
+          status: 'published',
+          limit: 20,
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        }
+      });
 
-    return () => clearTimeout(timer);
-  }, []);
+      if (response.data.success) {
+        // Transform API data to match the expected format
+        const transformedNews = response.data.news.map(item => ({
+          id: item._id,
+          title: item.title,
+          excerpt: item.excerpt,
+          content: item.content,
+          image: item.image ? `http://localhost:4000/uploads/${item.image}` : 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
+          category: item.category,
+          source: item.authorName || 'ATP نیوز',
+          time: new Date(item.createdAt).toLocaleDateString('ur-PK', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          views: item.views || 0,
+          comments: 0, // Comments not implemented yet
+          description: item.description,
+          tags: item.tags || []
+        }));
+
+        setNews(transformedNews);
+      } else {
+        setError('Failed to fetch news');
+      }
+    } catch (err) {
+      console.error('Error fetching news:', err);
+      setError('خبریں لوڈ کرنے میں خرابی ہوئی');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Initialize auth state when app loads
+    initializeAuth();
+    
+    // Fetch news from API
+    fetchNews();
+  }, [initializeAuth]);
 
   const handleNewsClick = (newsItem) => {
     setSelectedNews(newsItem);
@@ -113,6 +149,23 @@ const NewsApp = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">ATP لوڈ ہو رہا ہے...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <p className="text-red-600 text-lg mb-4">{error}</p>
+          <button 
+            onClick={fetchNews}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            دوبارہ کوشش کریں
+          </button>
         </div>
       </div>
     );
@@ -152,11 +205,11 @@ const NewsApp = () => {
               </h1>
             </div>
 
-            {/* Featured News and Side News */}
+            {/* Static Important News Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              {/* Left Side News */}
+              {/* Left Side Important News - Static */}
               <div className="space-y-4">
-                {news.slice(1, 4).map((item) => (
+                {staticImportantNews.map((item) => (
                   <div 
                     key={item.id} 
                     className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
@@ -170,7 +223,7 @@ const NewsApp = () => {
                       />
                       <div className="p-3 flex-1">
                         <h3 className="text-sm font-medium text-gray-800 leading-relaxed text-right mb-1">
-                          {item.title.substring(0, 80)}...
+                          {item.title.length > 80 ? item.title.substring(0, 80) + '...' : item.title}
                         </h3>
                         <div className="text-xs text-gray-500 text-right">
                           {item.time}
@@ -181,27 +234,45 @@ const NewsApp = () => {
                 ))}
               </div>
 
-              {/* Featured News */}
+              {/* Featured News - Static */}
               <div className="lg:col-span-2">
-                <div onClick={() => handleNewsClick(news[0])} className="cursor-pointer">
-                  <NewsCard news={news[0]} featured={true} />
+                <div onClick={() => handleNewsClick(staticFeaturedNews)} className="cursor-pointer">
+                  <NewsCard news={staticFeaturedNews} featured={true} />
                 </div>
               </div>
             </div>
 
-            {/* Latest News Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {news.slice(1).map((item) => (
-                <div key={item.id} onClick={() => handleNewsClick(item)} className="cursor-pointer">
-                  <NewsCard news={item} />
+            {/* Real News Articles Grid */}
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-800 border-b-2 border-green-600 pb-2 mb-6 text-right">
+                تازہ خبریں
+              </h2>
+              {news.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 text-6xl mb-4">📰</div>
+                  <p className="text-gray-600 text-lg mb-4">ابھی کوئی خبر دستیاب نہیں</p>
+                  <button 
+                    onClick={fetchNews}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    دوبارہ لوڈ کریں
+                  </button>
                 </div>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {news.map((item) => (
+                    <div key={item.id} onClick={() => handleNewsClick(item)} className="cursor-pointer">
+                      <NewsCard news={item} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:w-80">
-            <Sidebar onNewsClick={handleNewsClick} />
+            <Sidebar onNewsClick={handleNewsClick} news={news} />
           </div>
         </div>
       </main>

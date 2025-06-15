@@ -16,12 +16,12 @@ const setCookieOptions = {
 
 export const signup = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { firstName, lastName, email, phone, password, role } = req.body;
 
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Please provide name, email, and password"
+        message: "Please provide first name, last name, email, and password"
       });
     }
 
@@ -34,8 +34,10 @@ export const signup = async (req, res) => {
     }
 
     const user = await User.create({
-      name,
+      firstName,
+      lastName,
       email,
+      phone: phone || undefined,
       password,
       role: role || "standard-user"
     });

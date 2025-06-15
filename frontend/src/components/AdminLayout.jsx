@@ -25,7 +25,7 @@ const AdminLayout = ({ children, currentPage = 'dashboard' }) => {
   return (
     <div className={`flex h-screen bg-gray-100 ${language === 'ur' ? 'font-urdu' : ''}`} dir={language === 'ur' ? 'rtl' : 'ltr'}>
       {/* Sidebar */}
-      <div className={`bg-white shadow-lg transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
+      <div className={`bg-white shadow-lg transition-all duration-300 flex flex-col ${sidebarOpen ? 'w-64' : 'w-16'}`}>
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className={`flex items-center ${!sidebarOpen && 'justify-center'}`}>
@@ -38,16 +38,18 @@ const AdminLayout = ({ children, currentPage = 'dashboard' }) => {
               </span>
             )}
           </div>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1 rounded-lg hover:bg-gray-100"
-          >
-            {sidebarOpen ? (language === 'ur' ? '←' : '→') : (language === 'ur' ? '→' : '←')}
-          </button>
+          {sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1 rounded-lg hover:bg-gray-100"
+            >
+              {language === 'ur' ? '←' : '→'}
+            </button>
+          )}
         </div>
 
         {/* Navigation Menu */}
-        <nav className="mt-4">
+        <nav className="flex-1 mt-4">
           {menuItems.map((item) => (
             <button
               key={item.id}
@@ -64,11 +66,24 @@ const AdminLayout = ({ children, currentPage = 'dashboard' }) => {
           ))}
         </nav>
 
-        {/* Logout Button */}
-        <div className="absolute bottom-4 left-0 right-0 px-4">
+        {/* Sidebar Footer */}
+        <div className="border-t border-gray-200 p-4">
+          {/* Collapse Button for collapsed state */}
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="w-full flex items-center justify-center p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors mb-2"
+            >
+              <span className="text-xl">{language === 'ur' ? '→' : '←'}</span>
+            </button>
+          )}
+          
+          {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className={`flex items-center text-red-600 hover:bg-red-50 rounded-lg transition-colors ${
+              sidebarOpen ? 'w-full px-4 py-3' : 'w-full justify-center p-2'
+            }`}
           >
             <span className="text-xl">🚪</span>
             {sidebarOpen && (

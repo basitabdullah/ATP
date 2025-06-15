@@ -2,9 +2,14 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
-  name: {
+  firstName: {
     type: String,
-    required: [true, "Please enter your name"],
+    required: [true, "Please enter your first name"],
+    trim: true
+  },
+  lastName: {
+    type: String,
+    required: [true, "Please enter your last name"],
     trim: true
   },
   email: {
@@ -13,6 +18,11 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true
+  },
+  phone: {
+    type: String,
+    trim: true,
+    sparse: true // Allows multiple null values but ensures uniqueness for non-null values
   },
   password: {
     type: String,
@@ -43,8 +53,13 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Virtual for full name
+userSchema.virtual('fullName').get(function() {
+  return `${this.firstName} ${this.lastName}`;
+});
+
 userSchema.methods.toJSON = function() {
-  const userObject = this.toObject();
+  const userObject = this.toObject({ virtuals: true });
   delete userObject.password;
   return userObject;
 };

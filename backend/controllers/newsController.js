@@ -24,15 +24,15 @@ export const createNews = async (req, res) => {
 
     // Set author info from authenticated user
     const newsData = {
-      title,
-      category,
-      excerpt,
-      content,
-      description,
+      title: title || "",
+      category: category || "other",
+      excerpt: excerpt || "",
+      content: content || "",
+      description: description || "",
       tags: tags ? (Array.isArray(tags) ? tags : tags.split(",").map(tag => tag.trim())) : [],
       status: status || "draft",
       author: req.user._id,
-      authorName: req.user.name,
+      authorName: `${req.user.firstName} ${req.user.lastName}`,
       image: req.file ? req.file.filename : null
     };
 
@@ -41,8 +41,23 @@ export const createNews = async (req, res) => {
       newsData.status = "draft";
     }
 
+    console.log('📝 Creating news with data:', {
+      title: newsData.title,
+      status: newsData.status,
+      author: newsData.author,
+      authorName: newsData.authorName,
+      category: newsData.category
+    });
+
     const news = await News.create(newsData);
-    await news.populate("author", "name email role");
+    await news.populate("author", "firstName lastName email phone role");
+
+    console.log('✅ News created successfully:', {
+      id: news._id,
+      title: news.title,
+      status: news.status,
+      author: news.authorName
+    });
 
     res.status(201).json({
       success: true,
@@ -84,6 +99,8 @@ export const getAllNews = async (req, res) => {
     if (status) filter.status = status;
     if (author) filter.author = author;
     
+    console.log('🔍 Initial filter from query params:', { category, status, author });
+    
     // Text search across title, content, and description
     if (search) {
       filter.$or = [
@@ -96,27 +113,45 @@ export const getAllNews = async (req, res) => {
 
     // Role-based filtering
     if (req.user) {
+      console.log('👤 Authenticated user:', { id: req.user._id, role: req.user.role });
+      console.log('📝 Status filter from query:', status);
+      
       if (req.user.role === "author") {
         // Authors can only see their own news
         filter.author = req.user._id;
+        console.log('👤 Author filter applied - only showing own news');
       } else if (req.user.role === "editor") {
         // Editors can see all news
+        console.log('👥 Editor access - can see all news');
       } else if (req.user.role === "admin") {
         // Admins can see all news
+        console.log('🔑 Admin access - can see all news');
+      }
+      
+      // For authenticated users, respect the status filter they send
+      // Status filter was already set above if provided
+      if (status) {
+        console.log('✅ Status filter applied for authenticated user:', status);
+      } else {
+        console.log('ℹ️ No status filter - showing all statuses for authenticated user');
       }
     } else {
+      console.log('🚫 No authenticated user - restricting to published only');
       // Public users can only see published news
+      // Override any status filter for security
       filter.status = "published";
     }
+
+    console.log('📋 Final filter object:', filter);
 
     const options = {
       page: parseInt(page),
       limit: parseInt(limit),
       sort: { [sortBy]: sortOrder === "desc" ? -1 : 1 },
-      populate: {
-        path: "author",
-        select: "name email role"
-      }
+              populate: {
+          path: "author",
+          select: "firstName lastName email phone role"
+        }
     };
 
     const news = await News.find(filter)
@@ -126,6 +161,12 @@ export const getAllNews = async (req, res) => {
       .skip((options.page - 1) * options.limit);
 
     const total = await News.countDocuments(filter);
+
+    console.log('📊 Query results:', {
+      count: news.length,
+      total,
+      statuses: news.map(n => ({ id: n._id.toString().slice(-6), title: n.title.slice(0, 30), status: n.status }))
+    });
 
     res.status(200).json({
       success: true,
@@ -148,7 +189,7 @@ export const getAllNews = async (req, res) => {
 export const getNewsById = async (req, res) => {
   try {
     const { id } = req.params;
-    const news = await News.findById(id).populate("author", "name email role");
+    const news = await News.findById(id).populate("author", "firstName lastName email phone role");
 
     if (!news) {
       return res.status(404).json({
@@ -242,7 +283,7 @@ export const updateNews = async (req, res) => {
       news._id,
       updateData,
       { new: true, runValidators: true }
-    ).populate("author", "name email role");
+    ).populate("author", "firstName lastName email phone role");
 
     res.status(200).json({
       success: true,
@@ -266,7 +307,14 @@ export const updateNews = async (req, res) => {
 // Delete news
 export const deleteNews = async (req, res) => {
   try {
+    console.log("=== DELETE NEWS DEBUG ===");
+    console.log("Method:", req.method);
+    console.log("URL:", req.url);
+    console.log("Params:", req.params);
+    console.log("User:", req.user ? { id: req.user._id, role: req.user.role } : 'None');
+    
     const news = req.news; // From ownership middleware
+    console.log("Deleting news:", { id: news._id, title: news.title });
 
     // Delete associated image file
     if (news.image) {
@@ -274,12 +322,14 @@ export const deleteNews = async (req, res) => {
     }
 
     await News.findByIdAndDelete(news._id);
+    console.log("News deleted successfully");
 
     res.status(200).json({
       success: true,
       message: "News deleted successfully"
     });
   } catch (error) {
+    console.error("Error in deleteNews:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -291,6 +341,13 @@ export const deleteNews = async (req, res) => {
 // Update news status (publish/unpublish)
 export const updateNewsStatus = async (req, res) => {
   try {
+    console.log("=== UPDATE STATUS DEBUG ===");
+    console.log("Method:", req.method);
+    console.log("URL:", req.url);
+    console.log("Params:", req.params);
+    console.log("Body:", req.body);
+    console.log("User:", req.user ? { id: req.user._id, role: req.user.role } : 'None');
+    
     const { id } = req.params;
     const { status } = req.body;
 
@@ -309,8 +366,13 @@ export const updateNewsStatus = async (req, res) => {
       });
     }
 
+    console.log("Found news:", { id: news._id, title: news.title, currentStatus: news.status });
+    console.log("Changing status to:", status);
+
     news.status = status;
     await news.save();
+
+    console.log("Status updated successfully. New status:", news.status);
 
     res.status(200).json({
       success: true,
@@ -318,6 +380,7 @@ export const updateNewsStatus = async (req, res) => {
       news
     });
   } catch (error) {
+    console.error("Error in updateNewsStatus:", error);
     res.status(500).json({
       success: false,
       message: "Server error",

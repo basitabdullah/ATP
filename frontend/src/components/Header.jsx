@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Menu, X, User, Mail, Youtube, Instagram, Twitter, Facebook, TrendingUp } from 'lucide-react';
+import { Search, Menu, X, User, Mail, Youtube, Instagram, Twitter, Facebook, TrendingUp, Settings } from 'lucide-react';
+import useAuthStore from '../stores/authStore';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Get auth store data
+  const { user, isAuthenticated, logout } = useAuthStore();
+
+  // Check if user can access admin panel
+  const canAccessAdmin = user && ['admin', 'editor', 'author'].includes(user.role);
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <header className="bg-white shadow-sm">
@@ -53,23 +64,62 @@ const Header = () => {
             <a href="#" className="text-gray-700 hover:text-indigo-600 font-medium">مارکیٹ تجزیہ</a>
             <a href="#" className="text-gray-700 hover:text-indigo-600 font-medium">پورٹ فولیو</a>
             <a href="#" className="text-gray-700 hover:text-indigo-600 font-medium">تعلیم</a>
+            
+            {/* Admin Dashboard Button - Only show for admin, editor, author */}
+            {canAccessAdmin && (
+              <Link 
+                to="/admin"
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors flex items-center"
+              >
+                <Settings className="w-4 h-4 ml-2" />
+                ایڈمن پینل
+              </Link>
+            )}
           </div>
 
-          {/* Auth Buttons */}
+          {/* Auth Section */}
           <div className="flex items-center space-x-2 space-x-reverse">
-            <Link 
-              to="/register"
-              className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition-colors text-sm"
-            >
-              رجسٹر
-            </Link>
-            <Link 
-              to="/login"
-              className="bg-indigo-600 text-white px-4 py-2 rounded flex items-center hover:bg-indigo-700 transition-colors"
-            >
-              <User className="w-4 h-4 ml-2" />
-              لاگ ان
-            </Link>
+            {isAuthenticated && user ? (
+              <div className="flex items-center space-x-3 space-x-reverse">
+                {/* User Info */}
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-800">
+                    {user.fullName || `${user.firstName} ${user.lastName}`}
+                  </div>
+                  <div className="text-xs text-gray-500 capitalize">
+                    {user.role === 'standard-user' ? 'صارف' : 
+                     user.role === 'premium-user' ? 'پریمیم صارف' :
+                     user.role === 'author' ? 'مصنف' :
+                     user.role === 'editor' ? 'ایڈیٹر' :
+                     user.role === 'admin' ? 'ایڈمن' : user.role}
+                  </div>
+                </div>
+                
+                {/* Logout Button */}
+                <button 
+                  onClick={handleLogout}
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors text-sm"
+                >
+                  لاگ آؤٹ
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <Link 
+                  to="/register"
+                  className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition-colors text-sm"
+                >
+                  رجسٹر
+                </Link>
+                <Link 
+                  to="/login"
+                  className="bg-indigo-600 text-white px-4 py-2 rounded flex items-center hover:bg-indigo-700 transition-colors"
+                >
+                  <User className="w-4 h-4 ml-2" />
+                  لاگ ان
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -91,9 +141,33 @@ const Header = () => {
               <a href="#" className="block py-2 text-gray-700 hover:text-indigo-600">مارکیٹ تجزیہ</a>
               <a href="#" className="block py-2 text-gray-700 hover:text-indigo-600">پورٹ فولیو</a>
               <a href="#" className="block py-2 text-gray-700 hover:text-indigo-600">تعلیم</a>
+              
+              {/* Mobile Admin Dashboard Button */}
+              {canAccessAdmin && (
+                <Link to="/admin" className="block py-2 text-purple-600 font-medium">
+                  ایڈمن پینل
+                </Link>
+              )}
+              
               <div className="pt-2 border-t mt-2">
-                <Link to="/login" className="block py-2 text-indigo-600 font-medium">لاگ ان</Link>
-                <Link to="/register" className="block py-2 text-emerald-600 font-medium">رجسٹر</Link>
+                {isAuthenticated && user ? (
+                  <div className="space-y-2">
+                    <div className="py-2 text-gray-800 font-medium">
+                      {user.fullName || `${user.firstName} ${user.lastName}`}
+                    </div>
+                    <button 
+                      onClick={handleLogout}
+                      className="block py-2 text-red-600 font-medium"
+                    >
+                      لاگ آؤٹ
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Link to="/login" className="block py-2 text-indigo-600 font-medium">لاگ ان</Link>
+                    <Link to="/register" className="block py-2 text-emerald-600 font-medium">رجسٹر</Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>

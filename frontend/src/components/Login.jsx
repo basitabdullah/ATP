@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import useAuthStore from '../stores/authStore';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -8,26 +9,46 @@ const Login = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // Auth store
+  const { login, isLoading, error, clearError } = useAuthStore();
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Clear error when user starts typing
+    if (error) clearError();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate to main app after successful login
-      navigate('/');
-    }, 1500);
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      return;
+    }
+
+    console.log('Attempting login with:', { email: formData.email, password: '***' });
+    
+    try {
+      const result = await login(formData.email, formData.password);
+      
+      console.log('Login result:', result);
+      
+      if (result.success) {
+        console.log('Login successful:', result.data);
+        // Navigate to main app after successful login
+        navigate('/');
+      } else {
+        console.error('Login failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Login error caught:', error);
+    }
+    // Error will be handled by the store and displayed in UI
   };
 
   return (
@@ -42,6 +63,13 @@ const Login = () => {
 
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-right">
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
@@ -57,6 +85,7 @@ const Login = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-right"
                   placeholder="آپ کا ای میل داخل کریں"
                   required
+                  disabled={isLoading}
                 />
                 <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
               </div>
@@ -76,6 +105,7 @@ const Login = () => {
                   className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-right"
                   placeholder="آپ کا پاس ورڈ داخل کریں"
                   required
+                  disabled={isLoading}
                 />
                 <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <button
@@ -112,10 +142,10 @@ const Login = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading || !formData.email || !formData.password}
               className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   لاگ ان ہو رہا ہے...
@@ -154,7 +184,7 @@ const Login = () => {
 
         {/* Footer */}
         <div className="mt-8 text-center text-gray-500 text-sm">
-          <p>© 2024 ATP. تمام حقوق محفوظ ہیں۔</p>
+          <p>© 2025 ATP. تمام حقوق محفوظ ہیں۔</p>
         </div>
       </div>
     </div>

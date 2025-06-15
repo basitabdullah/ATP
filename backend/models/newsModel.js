@@ -3,26 +3,26 @@ import mongoose from "mongoose";
 const newsSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, "Please provide a title"],
     trim: true,
-    maxlength: [200, "Title cannot exceed 200 characters"]
+    maxlength: [200, "Title cannot exceed 200 characters"],
+    default: ""
   },
   category: {
     type: String,
-    required: [true, "Please provide a category"],
     enum: ["technology", "business", "sports", "entertainment", "health", "politics", "science", "other"],
-    lowercase: true
+    lowercase: true,
+    default: "other"
   },
   excerpt: {
     type: String,
-    required: [true, "Please provide an excerpt"],
     trim: true,
-    maxlength: [300, "Excerpt cannot exceed 300 characters"]
+    maxlength: [300, "Excerpt cannot exceed 300 characters"],
+    default: ""
   },
   content: {
     type: String,
-    required: [true, "Please provide content"],
-    trim: true
+    trim: true,
+    default: ""
   },
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -83,6 +83,20 @@ newsSchema.pre("save", function(next) {
   if (this.isModified("status") && this.status === "published" && !this.publishTime) {
     this.publishTime = new Date();
   }
+  
+  // Validate required fields for published news
+  if (this.status === "published") {
+    if (!this.title || this.title.trim().length < 5) {
+      return next(new Error("Title must be at least 5 characters for published news"));
+    }
+    if (!this.excerpt || this.excerpt.trim().length < 10) {
+      return next(new Error("Excerpt must be at least 10 characters for published news"));
+    }
+    if (!this.content || this.content.trim().length < 50) {
+      return next(new Error("Content must be at least 50 characters for published news"));
+    }
+  }
+  
   next();
 });
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search, Menu, X, User, Mail, Youtube, Instagram, Twitter, Facebook, TrendingUp, Settings } from 'lucide-react';
 import useAuthStore from '../stores/authStore';
 
-const Header = () => {
+const Header = ({ onCategoryClick, news = [] }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -16,6 +16,26 @@ const Header = () => {
   const handleLogout = async () => {
     await logout();
   };
+
+  // Categories data
+  const categories = [
+    { name: 'technology', label: 'ٹیکنالوجی', count: news.filter(n => n.category === 'technology').length },
+    { name: 'business', label: 'کاروبار', count: news.filter(n => n.category === 'business').length },
+    { name: 'sports', label: 'کھیل', count: news.filter(n => n.category === 'sports').length },
+    { name: 'entertainment', label: 'تفریح', count: news.filter(n => n.category === 'entertainment').length },
+    { name: 'health', label: 'صحت', count: news.filter(n => n.category === 'health').length },
+    { name: 'politics', label: 'سیاست', count: news.filter(n => n.category === 'politics').length },
+    { name: 'science', label: 'سائنس', count: news.filter(n => n.category === 'science').length },
+    { name: 'important', label: 'اہم خبریں', count: news.filter(n => n.category === 'important').length },
+    { name: 'market-updates', label: 'مارکیٹ اپڈیٹس', count: news.filter(n => n.category === 'market-updates').length },
+    { name: 'other', label: 'دیگر', count: news.filter(n => n.category === 'other').length }
+  ];
+
+  // Get top 4 categories with most news
+  const topCategories = categories
+    .filter(cat => cat.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
 
   return (
     <header className="bg-white shadow-sm">
@@ -47,8 +67,11 @@ const Header = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <div className="flex items-center">
-                <TrendingUp className="w-10 h-10 text-indigo-600 ml-2" />
-                <div className="text-3xl font-bold text-indigo-700">ATP</div>
+                <img 
+                  src="/logo.jpg" 
+                  alt="ATP Logo" 
+                  className="h-12 w-auto object-contain mr-3 rounded-full"
+                />
               </div>
               <div className="mr-3 text-gray-600">
                 <div className="text-sm font-medium">آٹو ٹریڈنگ پلیٹ فارم</div>
@@ -57,13 +80,21 @@ const Header = () => {
           </div>
 
           {/* Navigation Menu */}
-          <div className="hidden md:flex items-center space-x-8 space-x-reverse">
-            <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-colors">
-              ٹریڈنگ
-            </button>
-            <a href="#" className="text-gray-700 hover:text-indigo-600 font-medium">مارکیٹ تجزیہ</a>
-            <a href="#" className="text-gray-700 hover:text-indigo-600 font-medium">پورٹ فولیو</a>
-            <a href="#" className="text-gray-700 hover:text-indigo-600 font-medium">تعلیم</a>
+          <div className="hidden md:flex items-center space-x-6 space-x-reverse">
+            {topCategories.map((category, index) => (
+              <button
+                key={category.name}
+                onClick={() => onCategoryClick && onCategoryClick(category.name)}
+                className={`px-4 py-2 rounded font-medium transition-colors ${
+                  index === 0 
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                    : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+                }`}
+              >
+                {category.label}
+                <span className="ml-1 text-xs opacity-75">({category.count})</span>
+              </button>
+            ))}
             
             {/* Admin Dashboard Button - Only show for admin, editor, author */}
             {canAccessAdmin && (
@@ -137,10 +168,19 @@ const Header = () => {
         <div className="md:hidden bg-gray-50 border-t">
           <div className="container mx-auto px-4 py-4">
             <div className="space-y-2">
-              <a href="#" className="block py-2 text-gray-700 hover:text-indigo-600">ٹریڈنگ</a>
-              <a href="#" className="block py-2 text-gray-700 hover:text-indigo-600">مارکیٹ تجزیہ</a>
-              <a href="#" className="block py-2 text-gray-700 hover:text-indigo-600">پورٹ فولیو</a>
-              <a href="#" className="block py-2 text-gray-700 hover:text-indigo-600">تعلیم</a>
+              {topCategories.map((category) => (
+                <button
+                  key={category.name}
+                  onClick={() => {
+                    onCategoryClick && onCategoryClick(category.name);
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-indigo-600 text-right"
+                >
+                  <span className="text-xs text-gray-500">({category.count})</span>
+                  <span>{category.label}</span>
+                </button>
+              ))}
               
               {/* Mobile Admin Dashboard Button */}
               {canAccessAdmin && (

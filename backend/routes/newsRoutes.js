@@ -50,7 +50,7 @@ const validateNews = [
   body("category")
     .custom((value, { req }) => {
       const status = req.body.status || "draft";
-      const validCategories = ["technology", "business", "sports", "entertainment", "health", "politics", "science", "other"];
+      const validCategories = ["technology", "business", "sports", "entertainment", "health", "politics", "science", "important", "market-updates", "other"];
       if (status === "published") {
         if (!validCategories.includes(value)) {
           throw new Error("Invalid category for published news");
@@ -110,7 +110,7 @@ const validateNewsUpdate = [
     .withMessage("Title must be between 5 and 200 characters"),
   body("category")
     .optional()
-    .isIn(["technology", "business", "sports", "entertainment", "health", "politics", "science", "other"])
+    .isIn(["technology", "business", "sports", "entertainment", "health", "politics", "science", "important", "market-updates", "other"])
     .withMessage("Invalid category"),
   body("excerpt")
     .optional()

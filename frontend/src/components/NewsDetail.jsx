@@ -1,5 +1,10 @@
-const NewsDetail = ({ news, onBack }) => {
+const NewsDetail = ({ news, onBack, allNews = [] }) => {
   if (!news) return null;
+  
+  // Filter news to get related news from the same category, excluding the current news
+  const relatedNews = allNews
+    .filter(item => item.category === news.category && item.id !== news.id)
+    .slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gray-50 font-urdu">
@@ -88,9 +93,23 @@ const NewsDetail = ({ news, onBack }) => {
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-wrap gap-2">
+                    {/* Category tag */}
                     <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">#{news.category}</span>
-                    <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">#خبریں</span>
-                    <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">#تازہ_ترین</span>
+                    
+                    {/* Actual tags from news data */}
+                    {news.tags && news.tags.length > 0 ? (
+                      news.tags.map((tag, index) => (
+                        <span key={index} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                          #{tag}
+                        </span>
+                      ))
+                    ) : (
+                      // Fallback tags if no tags are available
+                      <>
+                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">#خبریں</span>
+                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">#تازہ_ترین</span>
+                      </>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-gray-500 mb-2">شیئر کریں:</div>
@@ -117,25 +136,40 @@ const NewsDetail = ({ news, onBack }) => {
               متعلقہ خبریں
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-start space-x-3 space-x-reverse p-3 hover:bg-gray-50 rounded transition-colors cursor-pointer">
-                  <img
-                    src={`https://images.pexels.com/photos/${5212345 + i}/pexels-photo-${5212345 + i}.jpeg?auto=compress&cs=tinysrgb&w=100`}
-                    alt="Related news"
-                    className="w-16 h-16 object-cover rounded flex-shrink-0"
-                  />
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-800 leading-relaxed text-right mb-1">
-                      متعلقہ خبر کا عنوان یہاں آئے گا
-                    </h3>
-                    <div className="text-xs text-gray-500 text-right">
-                      <span className="text-yellow-600">{news.category}</span>
-                      <span className="mx-2">•</span>
-                      <span>2 گھنٹے پہلے</span>
+              {relatedNews.length > 0 ? (
+                relatedNews.map((relatedItem) => (
+                  <div 
+                    key={relatedItem.id} 
+                    className="flex items-start space-x-3 space-x-reverse p-3 hover:bg-gray-50 rounded transition-colors cursor-pointer"
+                    onClick={() => {
+                      // This would ideally navigate to the related news
+                      // For now, we'll just log it
+                      console.log('Related news clicked:', relatedItem.title);
+                    }}
+                  >
+                    <img
+                      src={relatedItem.image}
+                      alt={relatedItem.title}
+                      className="w-16 h-16 object-cover rounded flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-gray-800 leading-relaxed text-right mb-1">
+                        {relatedItem.title.length > 60 ? relatedItem.title.substring(0, 60) + '...' : relatedItem.title}
+                      </h3>
+                      <div className="text-xs text-gray-500 text-right">
+                        <span className="text-yellow-600">{relatedItem.category}</span>
+                        <span className="mx-2">•</span>
+                        <span>{relatedItem.time}</span>
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">📰</div>
+                  <p className="text-gray-600">اس کیٹگری میں کوئی متعلقہ خبر دستیاب نہیں</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

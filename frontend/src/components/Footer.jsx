@@ -17,9 +17,7 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center mb-4">
               <div className="flex items-center">
-                <TrendingUp className="w-8 h-8 text-indigo-400 ml-3" />
-                <div className="text-2xl font-bold text-white">ATP</div>
-              </div>
+                    <img src="logo.jpg" alt="logo" className="w-20 h-15 rounded-full" />              </div>
               <div className="text-right mr-3">
                 <div className="text-lg font-semibold">آٹو ٹریڈنگ پلیٹ فارم</div>
                 <div className="text-sm text-gray-400">ذہین ٹریڈنگ حل</div>

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import NewsCard from './components/NewsCard';
 import NewsDetail from './components/NewsDetail';
+import CategoryPage from './components/CategoryPage';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
 import Login from './components/Login';
@@ -22,59 +23,13 @@ const NewsApp = () => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedNews, setSelectedNews] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [error, setError] = useState(null);
 
   // Initialize auth state
   const { initializeAuth } = useAuthStore();
 
-  // Static data for important news section
-  const staticFeaturedNews = {
-    id: 'featured-1',
-    title: 'ATP میں نئے ٹریڈنگ فیچرز کا اضافہ - خودکار تجارت میں انقلاب',
-    excerpt: 'ATP پلیٹ فارم میں جدید ترین AI الگورتھم کے ساتھ نئے ٹریڈنگ ٹولز شامل کیے گئے ہیں۔ یہ فیچرز صارفین کو بہتر تجارتی فیصلے کرنے میں مدد کریں گے۔',
-    image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'ٹیکنالوجی',
-    source: 'ATP نیوز',
-    time: 'PM 11:11 2025، 10 جون',
-    views: '15.2K',
-    comments: 45
-  };
 
-  const staticImportantNews = [
-    {
-      id: 'important-1',
-      title: 'کرپٹو کرنسی میں تیزی سے اضافہ - ATP صارفین کو نئے مواقع',
-      excerpt: 'آج کے دن کرپٹو مارکیٹ میں نمایاں بہتری دیکھی گئی۔ ATP کے تجزیہ کاروں کے مطابق یہ بڑھوتری مستحکم ہے۔',
-      image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'مالیات',
-      source: 'ATP مالی ڈیسک',
-      time: 'PM 9:47 2025، 10 جون',
-      views: '12.8K',
-      comments: 32
-    },
-    {
-      id: 'important-2',
-      title: 'اسٹاک مارکیٹ کی کارکردگی - ATP کے تجزیے اور توقعات',
-      excerpt: 'مقامی اور بین الاقوامی اسٹاک مارکیٹس میں مثبت رجحان۔ ATP کے ماہرین کی تفصیلی رپورٹ۔',
-      image: 'https://images.pexels.com/photos/6801645/pexels-photo-6801645.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'اسٹاک مارکیٹ',
-      source: 'ATP تجزیہ کار',
-      time: 'PM 8:30 2025، 10 جون',
-      views: '9.5K',
-      comments: 28
-    },
-    {
-      id: 'important-3',
-      title: 'آٹو ٹریڈنگ میں AI کا کردار - مستقبل کے تجارتی طریقے',
-      excerpt: 'مصنوعی ذہانت کا استعمال کرتے ہوئے ATP کے نئے ٹریڈنگ بوٹس کی کارکردگی کا جائزہ۔',
-      image: 'https://images.pexels.com/photos/8728380/pexels-photo-8728380.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'AI ٹریڈنگ',
-      source: 'ATP ٹیک ٹیم',
-      time: 'PM 7:15 2025، 10 جون',
-      views: '8.1K',
-      comments: 19
-    }
-  ];
 
   // Fetch news from API
   const fetchNews = async () => {
@@ -139,8 +94,13 @@ const NewsApp = () => {
     setSelectedNews(newsItem);
   };
 
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+  };
+
   const handleBackToList = () => {
     setSelectedNews(null);
+    setSelectedCategory(null);
   };
 
   if (loading) {
@@ -169,14 +129,30 @@ const NewsApp = () => {
         </div>
       </div>
     );
+      }
+
+  // Show category page if a category is selected
+  if (selectedCategory) {
+    return (
+      <div className="min-h-screen bg-gray-50 font-urdu">
+        <Header onCategoryClick={handleCategoryClick} news={news} />
+        <CategoryPage 
+          category={selectedCategory} 
+          news={news} 
+          onNewsClick={handleNewsClick} 
+          onBack={handleBackToList} 
+        />
+        <Footer />
+      </div>
+    );
   }
 
   // Show news detail page if a news item is selected
   if (selectedNews) {
     return (
       <div className="min-h-screen bg-gray-50 font-urdu">
-        <Header />
-        <NewsDetail news={selectedNews} onBack={handleBackToList} />
+        <Header onCategoryClick={handleCategoryClick} news={news} />
+        <NewsDetail news={selectedNews} onBack={handleBackToList} allNews={news} />
         <Footer />
       </div>
     );
@@ -184,7 +160,7 @@ const NewsApp = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-urdu">
-      <Header />
+      <Header onCategoryClick={handleCategoryClick} news={news} />
       
       <main className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -205,11 +181,11 @@ const NewsApp = () => {
               </h1>
             </div>
 
-            {/* Static Important News Section */}
+            {/* Important News Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              {/* Left Side Important News - Static */}
+              {/* Left Side Important News */}
               <div className="space-y-4">
-                {staticImportantNews.map((item) => (
+                {news.filter(item => item.category === 'important').slice(0, 3).map((item) => (
                   <div 
                     key={item.id} 
                     className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
@@ -232,17 +208,30 @@ const NewsApp = () => {
                     </div>
                   </div>
                 ))}
+                {news.filter(item => item.category === 'important').length === 0 && (
+                  <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+                    <div className="text-gray-400 text-4xl mb-2">🚨</div>
+                    <p className="text-gray-600">ابھی کوئی اہم خبر دستیاب نہیں</p>
+                  </div>
+                )}
               </div>
 
-              {/* Featured News - Static */}
+              {/* Featured News */}
               <div className="lg:col-span-2">
-                <div onClick={() => handleNewsClick(staticFeaturedNews)} className="cursor-pointer">
-                  <NewsCard news={staticFeaturedNews} featured={true} />
-                </div>
+                {news.filter(item => item.category === 'important').length > 0 ? (
+                  <div onClick={() => handleNewsClick(news.filter(item => item.category === 'important')[0])} className="cursor-pointer">
+                    <NewsCard news={news.filter(item => item.category === 'important')[0]} featured={true} />
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <div className="text-gray-400 text-6xl mb-4">📰</div>
+                    <p className="text-gray-600">ابھی کوئی اہم خبر دستیاب نہیں</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Real News Articles Grid */}
+            {/* Latest News Articles Grid */}
             <div className="mb-6">
               <h2 className="text-xl font-bold text-gray-800 border-b-2 border-green-600 pb-2 mb-6 text-right">
                 تازہ خبریں

@@ -1,4 +1,8 @@
+import { useState } from 'react';
+
 const Sidebar = ({ onNewsClick, news = [] }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const categories = [
     { name: 'technology', label: 'ٹیکنالوجی', count: news.filter(n => n.category === 'technology').length },
     { name: 'business', label: 'کاروبار', count: news.filter(n => n.category === 'business').length },
@@ -7,60 +11,31 @@ const Sidebar = ({ onNewsClick, news = [] }) => {
     { name: 'health', label: 'صحت', count: news.filter(n => n.category === 'health').length },
     { name: 'politics', label: 'سیاست', count: news.filter(n => n.category === 'politics').length },
     { name: 'science', label: 'سائنس', count: news.filter(n => n.category === 'science').length },
+    { name: 'important', label: 'اہم خبریں', count: news.filter(n => n.category === 'important').length },
+    { name: 'market-updates', label: 'مارکیٹ اپڈیٹس', count: news.filter(n => n.category === 'market-updates').length },
     { name: 'other', label: 'دیگر', count: news.filter(n => n.category === 'other').length }
   ];
 
-  // Static market updates data
-  const staticMarketUpdates = [
-    {
-      id: 'market-1',
-      title: 'بٹ کوائن میں 5% اضافہ - ATP کے صارفین کو بہترین منافع',
-      excerpt: 'کرپٹو مارکیٹ میں مثبت رجحان اور ATP کے آٹو ٹریڈنگ بوٹس کی کارکردگی۔',
-      time: '10 جون، 11:13 PM',
-      category: 'کرپٹو',
-      image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=100',
-      source: 'ATP مارکیٹ',
-      views: '8.5K',
-      comments: 23
-    },
-    {
-      id: 'market-2',
-      title: 'گولڈ کی قیمتوں میں اتار چڑھاؤ - ٹریڈنگ کے بہترین مواقع',
-      excerpt: 'سونے کی قیمتوں میں تبدیلی اور ATP کے تجزیہ کاروں کی رائے۔',
-      time: '10 جون، 11:12 PM',
-      category: 'کموڈٹی',
-      image: 'https://images.pexels.com/photos/6801874/pexels-photo-6801874.jpeg?auto=compress&cs=tinysrgb&w=100',
-      source: 'ATP تجزیات',
-      views: '7.2K',
-      comments: 18
-    },
-    {
-      id: 'market-3',
-      title: 'فارکس مارکیٹ میں EUR/USD کی کارکردگی',
-      excerpt: 'یورو ڈالر کی جوڑی میں حالیہ تبدیلیاں اور تجارتی مواقع۔',
-      time: '10 جون، 11:10 PM',
-      category: 'فارکس',
-      image: 'https://images.pexels.com/photos/6801645/pexels-photo-6801645.jpeg?auto=compress&cs=tinysrgb&w=100',
-      source: 'ATP فارکس',
-      views: '6.8K',
-      comments: 15
-    }
-  ];
+  // Filter news based on search term
+  const filteredNews = news.filter(item => 
+    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const acceptedNews = [
-    {
-      title: 'نئے AI ٹریڈنگ الگورتھم کا تجربہ',
-      time: '2 گھنٹے پہلے'
-    },
-    {
-      title: 'مارکیٹ کی رپورٹ اور آئندہ ہفتے کی توقعات',
-      time: '3 گھنٹے پہلے'
-    },
-    {
-      title: 'کامیاب ٹریڈرز کے انٹرویوز اور تجاویز',
-      time: '4 گھنٹے پہلے'
+  // Handle search
+  const handleSearch = () => {
+    if (searchTerm.trim() && filteredNews.length > 0) {
+      // Click on the first search result
+      onNewsClick && onNewsClick(filteredNews[0]);
     }
-  ];
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
     <aside className="space-y-6">
@@ -73,14 +48,48 @@ const Sidebar = ({ onNewsClick, news = [] }) => {
           <input
             type="text"
             placeholder="مارکیٹ اپڈیٹس تلاش کریں..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
             className="w-full px-4 py-2 pr-10 border border-gray-300 rounded text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          <button className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-indigo-600 text-white p-1 rounded">
+          <button 
+            onClick={handleSearch}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-indigo-600 text-white p-1 rounded hover:bg-indigo-700 transition-colors"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
         </div>
+        
+        {/* Search Results */}
+        {searchTerm && (
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2 text-right">
+              نتائج ({filteredNews.length})
+            </h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {filteredNews.slice(0, 5).map((item) => (
+                <div 
+                  key={item.id}
+                  onClick={() => onNewsClick && onNewsClick(item)}
+                  className="p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <h4 className="text-xs font-medium text-gray-800 text-right leading-relaxed">
+                    {item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 text-right mt-1">
+                    {item.category} • {item.time}
+                  </p>
+                </div>
+              ))}
+              {filteredNews.length === 0 && (
+                <p className="text-xs text-gray-500 text-center py-2">کوئی نتیجہ نہیں ملا</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Trading Categories Section */}
@@ -109,7 +118,7 @@ const Sidebar = ({ onNewsClick, news = [] }) => {
           مارکیٹ اپڈیٹس
         </h2>
         <div className="space-y-4">
-          {staticMarketUpdates.map((newsItem) => (
+          {news.filter(item => item.category === 'market-updates').slice(0, 3).map((newsItem) => (
             <div 
               key={newsItem.id} 
               className="flex items-start space-x-3 space-x-reverse cursor-pointer hover:bg-gray-50 rounded p-2 transition-colors"
@@ -132,6 +141,9 @@ const Sidebar = ({ onNewsClick, news = [] }) => {
               </div>
             </div>
           ))}
+          {news.filter(item => item.category === 'market-updates').length === 0 && (
+            <p className="text-gray-500 text-sm text-center py-4">کوئی مارکیٹ اپڈیٹ دستیاب نہیں</p>
+          )}
         </div>
       </div>
 
@@ -141,12 +153,15 @@ const Sidebar = ({ onNewsClick, news = [] }) => {
           ٹریڈنگ بصیرت
         </h2>
         <div className="space-y-3">
-          {acceptedNews.map((news, index) => (
+          {news.filter(item => item.category === 'important').slice(0, 3).map((newsItem, index) => (
             <div key={index} className="border-b border-gray-100 pb-2 last:border-b-0">
-              <h3 className="text-sm text-gray-700 text-right mb-1">{news.title}</h3>
-              <div className="text-xs text-gray-500 text-right">{news.time}</div>
+              <h3 className="text-sm text-gray-700 text-right mb-1">{newsItem.title}</h3>
+              <div className="text-xs text-gray-500 text-right">{newsItem.time}</div>
             </div>
           ))}
+          {news.filter(item => item.category === 'important').length === 0 && (
+            <p className="text-gray-500 text-sm text-center py-4">کوئی ٹریڈنگ بصیرت دستیاب نہیں</p>
+          )}
         </div>
       </div>
 

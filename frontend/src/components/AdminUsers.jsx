@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { useLanguage, translations } from '../context/LanguageContext';
+import useUserStore from '../stores/userStore';
 
 const AdminUsers = () => {
   const { language } = useLanguage();
@@ -8,89 +9,48 @@ const AdminUsers = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'احمد علی',
-      email: 'ahmad@example.com',
-      role: 'user',
-      status: 'active',
-      joinDate: '2025، 5 جون',
-      lastLogin: '2025، 10 جون',
-      articlesRead: 45,
-      comments: 12
-    },
-    {
-      id: 2,
-      name: 'فاطمہ خان',
-      email: 'fatima@example.com',
-      role: 'editor',
-      status: 'active',
-      joinDate: '2025، 3 جون',
-      lastLogin: '2025، 9 جون',
-      articlesRead: 89,
-      comments: 23
-    },
-    {
-      id: 3,
-      name: 'محمد حسن',
-      email: 'hassan@example.com',
-      role: 'user',
-      status: 'suspended',
-      joinDate: '2025، 1 جون',
-      lastLogin: '2025، 8 جون',
-      articlesRead: 12,
-      comments: 3
+  const { users, isLoading, error, getAllUsers, updateUser, deleteUser } = useUserStore();
+
+  useEffect(() => {
+    getAllUsers();
+  }, [getAllUsers]);
+
+  const handleRoleChange = async (id, newRole) => {
+    try {
+      await updateUser(id, { role: newRole });
+    } catch (error) {
+      console.error('Error updating user role:', error);
     }
-  ]);
-
-  const handleStatusChange = (id, newStatus) => {
-    setUsers(users.map(user => 
-      user.id === id ? { ...user, status: newStatus } : user
-    ));
   };
 
-  const handleRoleChange = (id, newRole) => {
-    setUsers(users.map(user => 
-      user.id === id ? { ...user, role: newRole } : user
-    ));
+  const handleDeleteUser = async (id) => {
+    if (window.confirm(language === 'ur' ? 'کیا آپ واقعی اس صارف کو حذف کرنا چاہتے ہیں؟' : 'Are you sure you want to delete this user?')) {
+      try {
+        await deleteUser(id);
+      } catch (error) {
+        console.error('Error deleting user:', error);
+      }
+    }
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const fullName = `${user.firstName} ${user.lastName}`;
+    const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
-    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
     
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesRole;
   });
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'suspended': return 'bg-red-100 text-red-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getRoleColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800';
       case 'editor': return 'bg-blue-100 text-blue-800';
-      case 'user': return 'bg-gray-100 text-gray-800';
+      case 'author': return 'bg-green-100 text-green-800';
+      case 'premium-user': return 'bg-yellow-100 text-yellow-800';
+      case 'standard-user': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'active': return t.active;
-      case 'suspended': return t.suspended;
-      case 'pending': return t.pending;
-      default: return status;
     }
   };
 
@@ -98,10 +58,32 @@ const AdminUsers = () => {
     switch (role) {
       case 'admin': return t.admin;
       case 'editor': return t.editor;
-      case 'user': return t.user;
+      case 'author': return language === 'ur' ? 'مصنف' : 'Author';
+      case 'premium-user': return language === 'ur' ? 'پریمیم صارف' : 'Premium User';
+      case 'standard-user': return t.user;
       default: return role;
     }
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout currentPage="users">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">{language === 'ur' ? 'لوڈ ہو رہا ہے...' : 'Loading...'}</div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout currentPage="users">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-red-600">{error}</div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout currentPage="users">
@@ -137,21 +119,21 @@ const AdminUsers = () => {
           </div>
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <span className="text-green-600 text-xl">✅</span>
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <span className="text-purple-600 text-xl">👑</span>
               </div>
               <div className={language === 'ur' ? 'mr-4' : 'ml-4'}>
-                <p className="text-sm font-medium text-gray-600">{t.activeUsers}</p>
+                <p className="text-sm font-medium text-gray-600">{t.admin}</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.status === 'active').length}
+                  {users.filter(u => u.role === 'admin').length}
                 </p>
               </div>
             </div>
           </div>
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <span className="text-purple-600 text-xl">👑</span>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <span className="text-blue-600 text-xl">✏️</span>
               </div>
               <div className={language === 'ur' ? 'mr-4' : 'ml-4'}>
                 <p className="text-sm font-medium text-gray-600">{t.editors}</p>
@@ -163,13 +145,13 @@ const AdminUsers = () => {
           </div>
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <span className="text-red-600 text-xl">🚫</span>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <span className="text-green-600 text-xl">📝</span>
               </div>
               <div className={language === 'ur' ? 'mr-4' : 'ml-4'}>
-                <p className="text-sm font-medium text-gray-600">{t.suspended}</p>
+                <p className="text-sm font-medium text-gray-600">{language === 'ur' ? 'مصنف' : 'Authors'}</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.status === 'suspended').length}
+                  {users.filter(u => u.role === 'author').length}
                 </p>
               </div>
             </div>
@@ -178,7 +160,7 @@ const AdminUsers = () => {
 
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{t.search}</label>
               <input
@@ -199,20 +181,9 @@ const AdminUsers = () => {
                 <option value="all">{t.allRoles}</option>
                 <option value="admin">{t.admin}</option>
                 <option value="editor">{t.editor}</option>
-                <option value="user">{t.user}</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t.status}</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">{t.all}</option>
-                <option value="active">{t.active}</option>
-                <option value="suspended">{t.suspended}</option>
-                <option value="pending">{t.pending}</option>
+                <option value="author">{language === 'ur' ? 'مصنف' : 'Author'}</option>
+                <option value="premium-user">{language === 'ur' ? 'پریمیم صارف' : 'Premium User'}</option>
+                <option value="standard-user">{t.user}</option>
               </select>
             </div>
           </div>
@@ -228,19 +199,13 @@ const AdminUsers = () => {
                     {t.name}
                   </th>
                   <th className={`px-6 py-3 ${language === 'ur' ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
+                    {language === 'ur' ? 'ای میل' : 'Email'}
+                  </th>
+                  <th className={`px-6 py-3 ${language === 'ur' ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
                     {t.role}
                   </th>
                   <th className={`px-6 py-3 ${language === 'ur' ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                    {t.status}
-                  </th>
-                  <th className={`px-6 py-3 ${language === 'ur' ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                    {t.joinDate}
-                  </th>
-                  <th className={`px-6 py-3 ${language === 'ur' ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                    {t.lastLogin}
-                  </th>
-                  <th className={`px-6 py-3 ${language === 'ur' ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                    {t.activity}
+                    {language === 'ur' ? 'فون' : 'Phone'}
                   </th>
                   <th className={`px-6 py-3 ${language === 'ur' ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
                     {t.actions}
@@ -249,61 +214,47 @@ const AdminUsers = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className={`w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-medium ${language === 'ur' ? 'ml-4' : 'mr-4'}`}>
-                          {user.name.charAt(0)}
+                          {user.firstName.charAt(0)}
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {`${user.firstName} ${user.lastName}`}
+                          </div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {user.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
                         value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        onChange={(e) => handleRoleChange(user._id, e.target.value)}
                         className={`text-xs font-medium rounded-full px-2 py-1 border-0 ${getRoleColor(user.role)}`}
                       >
-                        <option value="user">{t.user}</option>
+                        <option value="standard-user">{t.user}</option>
+                        <option value="premium-user">{language === 'ur' ? 'پریمیم صارف' : 'Premium User'}</option>
+                        <option value="author">{language === 'ur' ? 'مصنف' : 'Author'}</option>
                         <option value="editor">{t.editor}</option>
                         <option value="admin">{t.admin}</option>
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={user.status}
-                        onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                        className={`text-xs font-medium rounded-full px-2 py-1 border-0 ${getStatusColor(user.status)}`}
-                      >
-                        <option value="active">{t.active}</option>
-                        <option value="suspended">{t.suspended}</option>
-                        <option value="pending">{t.pending}</option>
-                      </select>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.joinDate}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.lastLogin}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="text-sm">
-                        <div>{user.articlesRead} {language === 'ur' ? 'خبریں پڑھیں' : 'articles read'}</div>
-                        <div>{user.comments} {language === 'ur' ? 'تبصرے' : 'comments'}</div>
-                      </div>
+                      {user.phone || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className={`flex ${language === 'ur' ? 'space-x-2 space-x-reverse' : 'space-x-2'}`}>
                         <button className="text-blue-600 hover:text-blue-900">
                           {t.details}
                         </button>
-                        <button className="text-green-600 hover:text-green-900">
-                          {t.message}
-                        </button>
-                        <button className="text-red-600 hover:text-red-900">
+                        <button 
+                          className="text-red-600 hover:text-red-900"
+                          onClick={() => handleDeleteUser(user._id)}
+                        >
                           {t.delete}
                         </button>
                       </div>

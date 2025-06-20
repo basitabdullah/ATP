@@ -37,10 +37,21 @@ export const canCreateNews = (req, res, next) => {
   
   // All roles can create news, but with different default status
   if (["admin", "editor", "author"].includes(userRole)) {
+    // Ensure req.body exists
+    if (!req.body) {
+      req.body = {};
+    }
+    
     // Authors can only create drafts
     if (userRole === "author" && req.body.status === "published") {
       req.body.status = "draft";
     }
+    
+    // Set default status if not provided
+    if (!req.body.status) {
+      req.body.status = userRole === "author" ? "draft" : "draft";
+    }
+    
     return next();
   }
 

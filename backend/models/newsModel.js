@@ -9,7 +9,7 @@ const newsSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ["technology", "business", "sports", "entertainment", "health", "politics", "science", "other"],
+    enum: ["technology", "business", "sports", "entertainment", "health", "politics", "science", "important", "market-updates", "other"],
     lowercase: true,
     default: "other"
   },

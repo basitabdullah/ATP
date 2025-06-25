@@ -1,10 +1,189 @@
+import { useState } from 'react';
+import useAuthStore from '../stores/authStore';
+import api from '../lib/axios';
+import jsPDF from 'jspdf';
+import { HiArrowDownTray, HiEye, HiChatBubbleLeft, HiArrowLeft, HiClock, HiUser } from 'react-icons/hi2';
+
 const NewsDetail = ({ news, onBack, allNews = [] }) => {
   if (!news) return null;
+  
+  const { canDownload, user } = useAuthStore();
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
   
   // Filter news to get related news from the same category, excluding the current news
   const relatedNews = allNews
     .filter(item => item.category === news.category && item.id !== news.id)
     .slice(0, 3);
+
+  const handleDownload = async () => {
+    if (!canDownload()) {
+      setDownloadError(user ? 'Download access is available for premium users only. Please upgrade your account.' : 'Please login to download news.');
+      return;
+    }
+
+    try {
+      setIsDownloading(true);
+      setDownloadError(null);
+      
+      // Call the download API endpoint to increment counter
+      const newsId = news._id || news.id;
+      if (!newsId) {
+        throw new Error('News ID not found');
+      }
+      await api.patch(`/news/${newsId}/download`);
+      
+      // Create simple PDF that handles Urdu text properly
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Function to safely convert text for PDF (remove problematic chars but keep basic info)
+      const safeTextForPDF = (text) => {
+        if (!text) return '';
+        // Check if text contains Urdu/Arabic characters
+        const hasUrdu = /[\u0600-\u06FF\u0750-\u077F]/.test(text);
+        
+        if (hasUrdu) {
+          // For Urdu text, provide a placeholder
+          return '[Urdu/Arabic content - view original article for full text]';
+        } else {
+          // For English text, clean and return
+          return text.replace(/[^\x20-\x7E]/g, '').trim();
+        }
+      };
+
+      // Add header
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 102, 204); // Blue color
+      doc.text('ATP News Article', 20, 30);
+      
+      // Add separator line
+      doc.setDrawColor(0, 102, 204);
+      doc.setLineWidth(1);
+      doc.line(20, 40, 190, 40);
+      
+      let yPos = 55;
+      
+      // Add metadata section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('Article Information:', 20, yPos);
+      yPos += 12;
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60);
+      
+      // Original title (in English or as placeholder)
+      const titleText = safeTextForPDF(news.title) || 'News Article';
+      const titleLines = doc.splitTextToSize(`Title: ${titleText}`, 170);
+      doc.text(titleLines, 20, yPos);
+      yPos += titleLines.length * 6 + 5;
+      
+      // Metadata
+      const currentDate = new Date(news.createdAt || Date.now()).toLocaleDateString();
+      doc.text(`Published: ${currentDate}`, 20, yPos);
+      yPos += 8;
+      
+      const category = safeTextForPDF(news.category) || 'General';
+      doc.text(`Category: ${category}`, 20, yPos);
+      yPos += 8;
+      
+      const author = safeTextForPDF(news.authorName) || 'ATP News';
+      doc.text(`Author: ${author}`, 20, yPos);
+      yPos += 15;
+      
+      // Content section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('Content:', 20, yPos);
+      yPos += 12;
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60);
+      
+      // Check if article has Urdu content
+      const hasUrduTitle = /[\u0600-\u06FF\u0750-\u077F]/.test(news.title || '');
+      const hasUrduExcerpt = /[\u0600-\u06FF\u0750-\u077F]/.test(news.excerpt || '');
+      const hasUrduContent = /[\u0600-\u06FF\u0750-\u077F]/.test(news.content || '');
+      
+      if (hasUrduTitle || hasUrduExcerpt || hasUrduContent) {
+        // Urdu content notice
+        const urduNotice = [
+          'NOTICE: This article contains Urdu/Arabic text.',
+          '',
+          'Due to PDF font limitations, the original Urdu text cannot be',
+          'properly displayed in this PDF format. To read the complete',
+          'article with proper Urdu formatting, please view it on the',
+          'ATP News website.',
+          '',
+          'Article Details:',
+          `- Original language: Urdu/Arabic`,
+          `- Publication date: ${currentDate}`,
+          `- Category: ${category}`,
+          `- Available online at ATP News Platform`,
+          '',
+          'This PDF serves as a download receipt and basic reference.',
+          'For the full reading experience, please access the article',
+          'through the ATP News website or mobile application.'
+        ];
+        
+        urduNotice.forEach(line => {
+          if (line === '') {
+            yPos += 4;
+          } else {
+            const textLines = doc.splitTextToSize(line, 170);
+            doc.text(textLines, 20, yPos);
+            yPos += textLines.length * 6 + 2;
+          }
+        });
+      } else {
+        // English content - display normally
+        if (news.excerpt) {
+          doc.setFont('helvetica', 'bold');
+          doc.text('Summary:', 20, yPos);
+          yPos += 8;
+          doc.setFont('helvetica', 'normal');
+          const excerptLines = doc.splitTextToSize(news.excerpt, 170);
+          doc.text(excerptLines, 20, yPos);
+          yPos += excerptLines.length * 6 + 10;
+        }
+        
+        if (news.content) {
+          doc.setFont('helvetica', 'bold');
+          doc.text('Full Article:', 20, yPos);
+          yPos += 8;
+          doc.setFont('helvetica', 'normal');
+          const contentLines = doc.splitTextToSize(news.content, 170);
+          doc.text(contentLines, 20, yPos);
+        }
+      }
+      
+      // Add footer
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text('Downloaded from ATP News Platform', 20, 270);
+      doc.text(`Download Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 20, 275);
+      doc.text('Visit ATP News for the latest updates and complete articles', 20, 280);
+      
+      // Generate filename (English only to avoid file system issues)
+      const fileName = `atp_news_${Date.now()}.pdf`;
+      doc.save(fileName);
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      setDownloadError(error.response?.data?.message || 'Failed to download. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 font-urdu">
@@ -12,9 +191,9 @@ const NewsDetail = ({ news, onBack, allNews = [] }) => {
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="mb-6 flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+          className="mb-6 flex items-center text-blue-600 hover:text-blue-800 transition-colors group"
         >
-          <span className="ml-2">←</span>
+          <HiArrowLeft className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
           واپس خبروں کی فہرست پر
         </button>
 
@@ -44,21 +223,55 @@ const NewsDetail = ({ news, onBack, allNews = [] }) => {
 
               {/* Meta Information */}
               <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-6">
-                <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-500">
-                  <span className="flex items-center">
-                    <span className="ml-1">👁</span>
-                    {news.views}
-                  </span>
-                  <span className="flex items-center">
-                    <span className="ml-1">💬</span>
-                    {news.comments}
-                  </span>
-                </div>
+                              <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-500">
+                <span className="flex items-center">
+                  <HiEye className="ml-1 w-4 h-4" />
+                  {news.views}
+                </span>
+                <span className="flex items-center">
+                  <HiChatBubbleLeft className="ml-1 w-4 h-4" />
+                  {news.comments}
+                </span>
+                {/* Circular Download Button */}
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className={`group w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md ${
+                    canDownload()
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 disabled:from-blue-400 disabled:to-blue-500 disabled:cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-300'
+                  }`}
+                  title={canDownload() ? 'Download this news article as PDF' : 'Premium access required for downloads'}
+                >
+                  <HiArrowDownTray className={`w-5 h-5 transition-transform ${isDownloading ? 'animate-bounce' : 'group-hover:scale-110'}`} />
+                </button>
+              </div>
                 <div className="text-sm text-gray-600 text-right">
-                  <div className="font-medium">{news.source}</div>
-                  <div>{news.time}</div>
+                  <div className="font-medium flex items-center justify-end">
+                    <HiUser className="ml-1 w-4 h-4" />
+                    {news.source}
+                  </div>
+                  <div className="flex items-center justify-end mt-1">
+                    <HiClock className="ml-1 w-4 h-4" />
+                    {news.time}
+                  </div>
                 </div>
               </div>
+
+              {/* Download Error Message */}
+              {downloadError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm text-right">{downloadError}</p>
+                  {!user && (
+                    <button
+                      onClick={() => window.location.href = '/login'}
+                      className="mt-2 text-red-600 hover:text-red-800 text-sm font-medium underline"
+                    >
+                      Login here
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Article Body */}
               <div className="prose prose-lg max-w-none text-right">

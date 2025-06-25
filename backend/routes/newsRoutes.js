@@ -15,7 +15,8 @@ import {
   canCreateNews,
   canChangeStatus,
   canDeleteNews,
-  adminOnly
+  adminOnly,
+  canDownloadNews
 } from "../middlewares/roleMiddleware.js";
 import {
   checkNewsOwnership,
@@ -142,17 +143,14 @@ const validateStatus = [
 // Public routes (no authentication required)
 router.get("/public", getAllNews); // Get all published news for public
 router.get("/public/:id", getNewsById); // Get single news (published only for public)
-router.patch("/:id/download", incrementDownloads); // Increment download count
 
-// Protected routes (require authentication)
-router.use(authMiddleware);
-
-// Authenticated news routes
-router.get("/", getAllNews); // Get all news for authenticated users (with filters)
-router.get("/:id", getNewsById); // Get single news for authenticated users
+// Authenticated news routes (with middleware)
+router.get("/", authMiddleware, getAllNews); // Get all news for authenticated users (with filters)
+router.get("/:id", authMiddleware, getNewsById); // Get single news for authenticated users
 
 // Create news - All authenticated roles can create, but with restrictions
 router.post("/", 
+  authMiddleware,
   canCreateNews,
   uploadNewsImage,
   handleMulterError,
@@ -162,6 +160,7 @@ router.post("/",
 
 // Update news - Role-based with ownership check
 router.put("/:id",
+  authMiddleware,
   checkUpdatePermission,
   uploadNewsImage,
   handleMulterError,
@@ -171,18 +170,23 @@ router.put("/:id",
 
 // Delete news - Admin only
 router.delete("/:id",
+  authMiddleware,
   checkDeletePermission,
   deleteNews
 );
 
 // Update news status - Admin and Editor only
 router.patch("/:id/status",
+  authMiddleware,
   canChangeStatus,
   validateStatus,
   updateNewsStatus
 );
 
 // Get statistics - Admin only
-router.get("/admin/stats", adminOnly, getNewsStats);
+router.get("/admin/stats", authMiddleware, adminOnly, getNewsStats);
+
+// Download news - Premium users and above only
+router.patch("/:id/download", authMiddleware, canDownloadNews, incrementDownloads);
 
 export default router; 

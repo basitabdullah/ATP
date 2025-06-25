@@ -54,7 +54,7 @@ const NewsApp = () => {
           title: item.title,
           excerpt: item.excerpt,
           content: item.content,
-          image: item.image ? `http://localhost:4000/uploads/${item.image}` : 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
+          image: item.image ? `${import.meta.env.VITE_BACKEND_URl}/uploads/${item.image}` : 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800',
           category: item.category,
           source: item.authorName || 'ATP نیوز',
           time: new Date(item.createdAt).toLocaleDateString('ur-PK', {

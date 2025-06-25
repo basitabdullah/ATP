@@ -1,20 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage, translations } from '../context/LanguageContext';
+import useAuthStore from '../stores/authStore';
 
 const AdminLayout = ({ children, currentPage = 'dashboard' }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const { language, toggleLanguage } = useLanguage();
   const t = translations[language];
+  const { user } = useAuthStore();
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: '📊', path: '/admin' },
     { id: 'news', label: t.newsManagement, icon: '📰', path: '/admin/news' },
-    { id: 'categories', label: t.categories, icon: '📂', path: '/admin/categories' },
+    // { id: 'categories', label: t.categories, icon: '📂', path: '/admin/categories' },
     { id: 'users', label: t.users, icon: '👥', path: '/admin/users' },
 
-    { id: 'settings', label: t.settings, icon: '⚙️', path: '/admin/settings' },
+    // { id: 'settings', label: t.settings, icon: '⚙️', path: '/admin/settings' },
   ];
 
   const handleLogout = () => {
@@ -29,9 +31,13 @@ const AdminLayout = ({ children, currentPage = 'dashboard' }) => {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className={`flex items-center ${!sidebarOpen && 'justify-center'}`}>
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+            <button 
+              onClick={() => navigate('/')}
+              className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold hover:bg-blue-700 transition-colors cursor-pointer"
+              title="Go to Home"
+            >
               ATP
-            </div>
+            </button>
             {sidebarOpen && (
               <span className={`${language === 'ur' ? 'mr-3' : 'ml-3'} text-xl font-bold text-gray-800`}>
                 {t.adminPanel}
@@ -109,20 +115,12 @@ const AdminLayout = ({ children, currentPage = 'dashboard' }) => {
               >
                 {language === 'ur' ? 'English' : 'اردو'}
               </button>
-              <div className="relative">
-                <button className="p-2 text-gray-600 hover:text-gray-800 relative">
-                  🔔
-                  <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    3
-                  </span>
-                </button>
-              </div>
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                  A
+                  {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <span className={`${language === 'ur' ? 'mr-2' : 'ml-2'} text-sm font-medium text-gray-700`}>
-                  {t.admin}
+                  {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : t.admin}
                 </span>
               </div>
             </div>

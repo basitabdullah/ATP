@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'http://localhost:4000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URl}/api`,
   timeout: 10000,
   withCredentials: true, // Important: This enables sending cookies with requests
   headers: {
@@ -59,7 +59,7 @@ export const apiJSON = api; // For JSON requests
 
 // For multipart/form-data requests (file uploads)
 export const apiFormData = axios.create({
-  baseURL: 'http://localhost:4000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URl}/api`,
   timeout: 30000, // Longer timeout for file uploads
   withCredentials: true,
   headers: {

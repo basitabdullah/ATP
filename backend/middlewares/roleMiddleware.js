@@ -23,6 +23,7 @@ export const roleMiddleware = (allowedRoles) => {
 export const adminOnly = roleMiddleware(["admin"]);
 export const adminOrEditor = roleMiddleware(["admin", "editor"]);
 export const allRoles = roleMiddleware(["admin", "editor", "author"]);
+export const premiumAndAbove = roleMiddleware(["admin", "editor", "author", "premium-user"]);
 
 // Custom middleware for news creation permissions
 export const canCreateNews = (req, res, next) => {
@@ -99,4 +100,25 @@ export const canDeleteNews = (req, res, next) => {
   }
 
   next();
+};
+
+// Middleware to check if user can download news
+export const canDownloadNews = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required. Please login to download news"
+    });
+  }
+
+  const userRole = req.user.role;
+  
+  if (["admin", "editor", "author", "premium-user"].includes(userRole)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: "Download access is available for premium users only. Please upgrade your account to download news"
+  });
 }; 

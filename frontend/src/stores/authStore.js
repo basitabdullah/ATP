@@ -249,6 +249,18 @@ const useAuthStore = create(
         return user && ['admin', 'editor', 'author'].includes(user.role);
       },
 
+      // Check if user can download news (premium users and above)
+      canDownload: () => {
+        const user = get().user;
+        return user && ['admin', 'editor', 'author', 'premium-user'].includes(user.role);
+      },
+
+      // Check if user is premium or above
+      isPremiumOrAbove: () => {
+        const user = get().user;
+        return user && ['admin', 'editor', 'author', 'premium-user'].includes(user.role);
+      },
+
       // Reset store
       reset: () => set({
         user: null,

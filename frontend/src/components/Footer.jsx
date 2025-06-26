@@ -1,15 +1,15 @@
 import { TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   const footerLinks = {
-    'ٹریڈنگ': ['لائیو ٹریڈنگ', 'بوٹ ٹریڈنگ', 'کاپی ٹریڈنگ', 'فیوچرز', 'آپشنز'],
-    'کمپنی': ['ہمارے بارے میں', 'رابطہ', 'ٹیم', 'کیریئر', 'اشتہارات'],
-    'خدمات': ['موبائل ایپ', 'API', 'مارکیٹ ڈیٹا', 'تجزیات', 'سگنلز'],
-    'مدد': ['اکثر پوچھے جانے والے سوالات', 'رپورٹ کریں', 'فیڈبیک', 'پرائیویسی پالیسی', 'شرائط']
+    'Quick Links': ['HOME', 'ABOUT', 'CONTACT US'],
+    'Services': ['SUBSCRIPTION ENQUIRY', 'PUBLIC NOTICES', 'PRESS RELEASES', 'PRODUCTS'],
+    'Policies': ['CORRECTIONS POLICY', 'DECLARATION', 'Privacy Policy', 'Terms of Service']
   };
 
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-gray-900 text-white" dir="ltr">
       <div className="container mx-auto px-4 py-12">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-8">
@@ -17,17 +17,17 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center mb-4">
               <div className="flex items-center">
-                    <img src="logo.jpg" alt="logo" className="w-20 h-15 rounded-full" />              </div>
-              <div className="text-right mr-3">
-                <div className="text-lg font-semibold">آٹو ٹریڈنگ پلیٹ فارم</div>
-                <div className="text-sm text-gray-400">ذہین ٹریڈنگ حل</div>
+                <img src="logo.jpg" alt="logo" className="w-20 h-15 rounded-full" />
+              </div>
+              <div className="ml-3">
+                <div className="text-lg font-semibold">ATP - Arcanum Tide Press</div>
+                <div className="text-sm text-gray-400">News & Digital Publishing</div>
               </div>
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed text-right mb-4">
-              ATP ایک جدید ترین آٹو ٹریڈنگ پلیٹ فارم ہے جو مصنوعی ذہانت کا استعمال کرتے ہوئے 
-              بہترین ٹریڈنگ کے مواقع فراہم کرتا ہے۔ ہمارا مقصد آپ کو بہتر مالی نتائج دینا ہے۔
+            <p className="text-gray-400 text-sm leading-relaxed mb-4" dir="rtl">
+              ATP ایک اعلیٰ ڈیجیٹل نیوز اور پبلشنگ پلیٹ فارم ہے جو جامع خبروں کی کوریج، پریس ریلیزز، اور ڈیجیٹل پبلشنگ حل فراہم کرتا ہے۔ قابل اعتماد معلومات اور جدید پبلشنگ خدمات کے لیے آپ کا بھروسہ مند ذریعہ۔
             </p>
-            <div className="flex space-x-4 space-x-reverse">
+            <div className="flex space-x-2">
               <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">f</div>
               </a>
@@ -46,16 +46,25 @@ const Footer = () => {
           {/* Footer Links */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h3 className="font-semibold text-lg mb-4 text-right">{category}</h3>
+              <h3 className="font-semibold text-lg mb-4">{category}</h3>
               <ul className="space-y-2">
                 {links.map((link) => (
                   <li key={link}>
-                    <a
-                      href="#"
-                      className="text-gray-400 hover:text-white transition-colors duration-200 text-sm text-right block"
-                    >
-                      {link}
-                    </a>
+                    {link === 'Privacy Policy' ? (
+                      <Link
+                        to="/privacy-policy"
+                        className="text-gray-400 hover:text-white transition-colors duration-200 text-sm block"
+                      >
+                        {link}
+                      </Link>
+                    ) : (
+                      <a
+                        href="#"
+                        className="text-gray-400 hover:text-white transition-colors duration-200 text-sm block"
+                      >
+                        {link}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -65,21 +74,10 @@ const Footer = () => {
 
         {/* Bottom Footer */}
         <div className="border-t border-gray-800 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-sm text-gray-400 text-center md:text-right mb-4 md:mb-0">
-              <p>© 2024 ATP - آٹو ٹریڈنگ پلیٹ فارم. تمام حقوق محفوظ ہیں۔</p>
-              <p className="mt-1">Powered by AI & Modern Technologies</p>
-            </div>
-            <div className="flex items-center space-x-6 space-x-reverse">
-              <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
-                پرائیویسی پالیسی
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
-                استعمال کی شرائط
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
-                کوکیز پالیسی
-              </a>
+          <div className="text-center">
+            <div className="text-sm text-gray-400" dir="rtl">
+              <p>© 2025 ATP - آرکینم ٹائیڈ پریس۔ تمام حقوق محفوظ ہیں۔</p>
+              <p className="mt-1">تمام مواد ATP کی ملکیت ہے۔</p>
             </div>
           </div>
         </div>

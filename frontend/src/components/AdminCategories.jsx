@@ -1,130 +1,122 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { useLanguage, translations } from '../context/LanguageContext';
+import { apiJSON } from '../lib/axios';
+import useAuthStore from '../stores/authStore';
 
 const AdminCategories = () => {
   const { language } = useLanguage();
   const t = translations[language];
+  const { user, isAuthenticated, canEdit } = useAuthStore();
   
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-  
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [newCategory, setNewCategory] = useState({
     name: '',
-    description: '',
-    color: '#3B82F6'
+    description: ''
   });
 
-  const [categories, setCategories] = useState([
-    {
-      id: 1,
-      name: 'ٹیکنالوجی',
-      description: 'ٹیکنالوجی اور جدید ترین ایجادات کی خبریں',
-      color: '#3B82F6',
-      newsCount: 45,
-      isActive: true,
-      createdDate: '2025، 1 جون'
-    },
-    {
-      id: 2,
-      name: 'مالیات',
-      description: 'مالی خبریں اور اقتصادی تجزیے',
-      color: '#10B981',
-      newsCount: 32,
-      isActive: true,
-      createdDate: '2025، 1 جون'
-    },
-    {
-      id: 3,
-      name: 'اسٹاک مارکیٹ',
-      description: 'اسٹاک مارکیٹ کی تازہ ترین خبریں',
-      color: '#F59E0B',
-      newsCount: 28,
-      isActive: true,
-      createdDate: '2025، 1 جون'
-    },
-    {
-      id: 4,
-      name: 'AI ٹریڈنگ',
-      description: 'مصنوعی ذہانت اور خودکار تجارت',
-      color: '#8B5CF6',
-      newsCount: 19,
-      isActive: true,
-      createdDate: '2025، 2 جون'
-    },
-    {
-      id: 5,
-      name: 'مالی منصوبہ بندی',
-      description: 'ذاتی مالیات اور سرمایہ کاری',
-      color: '#EF4444',
-      newsCount: 15,
-      isActive: false,
-      createdDate: '2025، 3 جون'
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await apiJSON.get('/categories');
+      setCategories(response.data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      if (error.response?.status === 401) {
+        alert('You need to login first. Please go to /login');
+      } else {
+        alert('Error loading categories: ' + (error.response?.data?.message || error.message));
+      }
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  const handleAddCategory = (e) => {
+  // Load categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Handle add category
+  const handleAddCategory = async (e) => {
     e.preventDefault();
-    const newId = Math.max(...categories.map(c => c.id)) + 1;
-    const category = {
-      ...newCategory,
-      id: newId,
-      newsCount: 0,
-      isActive: true,
-      createdDate: new Date().toLocaleDateString('ur-PK')
-    };
-    setCategories([...categories, category]);
-    setNewCategory({ name: '', description: '', color: '#3B82F6' });
-    setShowAddForm(false);
-  };
-
-  const handleEditCategory = (category) => {
-    setEditingCategory(category);
-    setNewCategory({
-      name: category.name,
-      description: category.description,
-      color: category.color
-    });
-    setShowAddForm(true);
-  };
-
-  const handleUpdateCategory = (e) => {
-    e.preventDefault();
-    setCategories(categories.map(cat => 
-      cat.id === editingCategory.id 
-        ? { ...cat, ...newCategory }
-        : cat
-    ));
-    setNewCategory({ name: '', description: '', color: '#3B82F6' });
-    setEditingCategory(null);
-    setShowAddForm(false);
-  };
-
-  const handleDeleteCategory = (id) => {
-    const category = categories.find(c => c.id === id);
-    if (category.newsCount > 0) {
-      alert(language === 'ur' ? `اس کیٹگری میں ${category.newsCount} خبریں موجود ہیں۔ پہلے انہیں دوسری کیٹگری میں منتقل کریں۔` : `This category has ${category.newsCount} news. Please move them to another category first.`);
+    if (!newCategory.name.trim()) {
+      alert('Please enter a category name');
       return;
     }
-    if (confirm(language === 'ur' ? 'کیا آپ واقعی اس کیٹگری کو حذف کرنا چاہتے ہیں؟' : 'Do you really want to delete this category?')) {
-      setCategories(categories.filter(cat => cat.id !== id));
+
+    try {
+      setSubmitting(true);
+      const response = await apiJSON.post('/categories', {
+        name: newCategory.name.trim(),
+        description: newCategory.description.trim()
+      });
+
+      if (response.data.success) {
+        setCategories([response.data.category, ...categories]);
+        setNewCategory({ name: '', description: '' });
+        setShowAddForm(false);
+        alert('Category added successfully!');
+      }
+    } catch (error) {
+      console.error('Error creating category:', error);
+      alert('Error creating category: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleToggleStatus = (id) => {
-    setCategories(categories.map(cat => 
-      cat.id === id ? { ...cat, isActive: !cat.isActive } : cat
-    ));
+  // Handle delete category
+  const handleDeleteCategory = async (id, categoryName) => {
+    if (!confirm(language === 'ur' ? 
+      `کیا آپ واقعی "${categoryName}" کیٹگری کو حذف کرنا چاہتے ہیں؟` : 
+      `Are you sure you want to delete "${categoryName}" category?`)) {
+      return;
+    }
+
+    try {
+      const response = await apiJSON.delete(`/categories/${id}`);
+      if (response.data.success) {
+        setCategories(categories.filter(cat => cat._id !== id));
+        alert('Category deleted successfully!');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('Error deleting category: ' + (error.response?.data?.message || error.message));
+    }
   };
 
-  const colorOptions = [
-    { value: '#3B82F6', name: t.blue },
-    { value: '#10B981', name: t.green },
-    { value: '#F59E0B', name: t.orange },
-    { value: '#8B5CF6', name: t.purple },
-    { value: '#EF4444', name: t.red },
-    { value: '#6B7280', name: t.gray }
-  ];
+  // Check if user is authenticated and has permission
+  if (!isAuthenticated || !user) {
+    return (
+      <AdminLayout currentPage="categories">
+        <div className="text-center py-8">
+          <div className="text-red-500 text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Authentication Required</h2>
+          <p className="text-gray-600 mb-4">You need to login to access this page.</p>
+          <a href="/login" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            Go to Login
+          </a>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!canEdit()) {
+    return (
+      <AdminLayout currentPage="categories">
+        <div className="text-center py-8">
+          <div className="text-orange-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-600">You don't have permission to manage categories. Only admins and editors can access this feature.</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout currentPage="categories">
@@ -132,124 +124,110 @@ const AdminCategories = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">{t.categoryManagement}</h1>
-            <p className="text-gray-600">{t.categoryManagementDesc}</p>
+            <h1 className="text-2xl font-bold text-gray-800">Category Management</h1>
+            <p className="text-gray-600">Manage your news categories</p>
           </div>
           <button
             onClick={() => setShowAddForm(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {t.addCategoryButton}
+            Add Category
           </button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <span className="text-blue-600 text-xl">📂</span>
-              </div>
-              <div className={language === 'ur' ? 'mr-4' : 'ml-4'}>
-                <p className="text-sm font-medium text-gray-600">{t.totalCategories}</p>
-                <p className="text-2xl font-bold text-gray-900">{categories.length}</p>
-              </div>
+        {/* Statistics */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <span className="text-blue-600 text-xl">📂</span>
             </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <span className="text-green-600 text-xl">✅</span>
-              </div>
-              <div className={language === 'ur' ? 'mr-4' : 'ml-4'}>
-                <p className="text-sm font-medium text-gray-600">{t.activeCategories}</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {categories.filter(c => c.isActive).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <span className="text-purple-600 text-xl">📰</span>
-              </div>
-              <div className={language === 'ur' ? 'mr-4' : 'ml-4'}>
-                <p className="text-sm font-medium text-gray-600">{t.totalNews}</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {categories.reduce((sum, cat) => sum + cat.newsCount, 0)}
-                </p>
-              </div>
+            <div className={language === 'ur' ? 'mr-4' : 'ml-4'}>
+              <p className="text-sm font-medium text-gray-600">Total Categories</p>
+              <p className="text-2xl font-bold text-gray-900">{categories.length}</p>
             </div>
           </div>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((category) => (
-            <div key={category.id} className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center">
-                  <div 
-                    className={`w-4 h-4 rounded-full ${language === 'ur' ? 'ml-3' : 'mr-3'}`}
-                    style={{ backgroundColor: category.color }}
-                  ></div>
-                  <h3 className="text-lg font-bold text-gray-800">{category.name}</h3>
-                </div>
-                <div className={`flex items-center ${language === 'ur' ? 'space-x-2 space-x-reverse' : 'space-x-2'}`}>
-                  <button
-                    onClick={() => handleEditCategory(category)}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    {t.edit}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCategory(category.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    {t.delete}
-                  </button>
-                </div>
-              </div>
+        {/* Loading */}
+        {loading && (
+          <div className="text-center py-4">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
 
-              <p className="text-gray-600 text-sm mb-4">{category.description}</p>
-
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm text-gray-500">
-                  <span className="font-medium">{category.newsCount}</span> {language === 'ur' ? 'خبریں' : 'news'}
-                </div>
-                <div className={`flex items-center text-sm ${category.isActive ? 'text-green-600' : 'text-red-600'}`}>
-                  <div className={`w-2 h-2 rounded-full ${category.isActive ? 'bg-green-500' : 'bg-red-500'} ${language === 'ur' ? 'ml-2' : 'mr-2'}`}></div>
-                  {category.isActive ? t.active : language === 'ur' ? 'غیر فعال' : 'Inactive'}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>{t.createdDate}: {category.createdDate}</span>
-                <button
-                  onClick={() => handleToggleStatus(category.id)}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  {category.isActive ? (language === 'ur' ? 'غیر فعال کریں' : 'Deactivate') : (language === 'ur' ? 'فعال کریں' : 'Activate')}
-                </button>
-              </div>
+        {/* Categories List */}
+        {!loading && (
+          <div className="bg-white rounded-lg border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Categories</h2>
             </div>
-          ))}
-        </div>
+            
+            {categories.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                No categories found. Add your first category!
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3  text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3  text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3  text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3  text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {categories.map((category) => (
+                      <tr key={category._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{category.name}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-500">
+                            {category.description || 'No description'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {new Date(category.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => handleDeleteCategory(category._id, category.name)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Add/Edit Category Modal */}
+        {/* Add Category Modal */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">
-                  {editingCategory ? (language === 'ur' ? 'کیٹگری میں ترمیم' : 'Edit Category') : t.addCategoryButton}
-                </h2>
+                <h2 className="text-xl font-bold text-gray-800">Add New Category</h2>
                 <button
                   onClick={() => {
                     setShowAddForm(false);
-                    setEditingCategory(null);
-                    setNewCategory({ name: '', description: '', color: '#3B82F6' });
+                    setNewCategory({ name: '', description: '' });
                   }}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -257,66 +235,59 @@ const AdminCategories = () => {
                 </button>
               </div>
 
-              <form onSubmit={editingCategory ? handleUpdateCategory : handleAddCategory} className="space-y-4">
+              <form onSubmit={handleAddCategory} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.name}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category Name *
+                  </label>
                   <input
                     type="text"
                     required
                     value={newCategory.name}
                     onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={language === 'ur' ? 'کیٹگری کا نام' : 'Category name'}
+                    placeholder="Enter category name"
+                    maxLength={50}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {newCategory.name.length}/50 characters
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.description}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
                   <textarea
-                    required
                     rows="3"
                     value={newCategory.description}
                     onChange={(e) => setNewCategory({...newCategory, description: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={language === 'ur' ? 'کیٹگری کی تفصیل' : 'Category description'}
+                    placeholder="Enter category description (optional)"
+                    maxLength={200}
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.color}</label>
-                  <div className="flex space-x-2">
-                    {colorOptions.map((colorOption) => (
-                      <button
-                        key={colorOption.value}
-                        type="button"
-                        onClick={() => setNewCategory({...newCategory, color: colorOption.value})}
-                        className={`w-8 h-8 rounded-full border-2 ${
-                          newCategory.color === colorOption.value ? 'border-gray-400' : 'border-gray-200'
-                        }`}
-                        style={{ backgroundColor: colorOption.value }}
-                        title={colorOption.name}
-                      />
-                    ))}
-                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {newCategory.description.length}/200 characters
+                  </p>
                 </div>
 
                 <div className={`flex ${language === 'ur' ? 'space-x-4 space-x-reverse' : 'space-x-4'} pt-4`}>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={submitting}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
-                    {editingCategory ? (language === 'ur' ? 'اپ ڈیٹ کریں' : 'Update') : t.save}
+                    {submitting ? 'Adding...' : 'Add Category'}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setShowAddForm(false);
-                      setEditingCategory(null);
-                      setNewCategory({ name: '', description: '', color: '#3B82F6' });
+                      setNewCategory({ name: '', description: '' });
                     }}
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
                   >
-                    {t.cancel}
+                    Cancel
                   </button>
                 </div>
               </form>

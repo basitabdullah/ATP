@@ -87,25 +87,14 @@ const AdminNews = () => {
   });
 
   const [newsList, setNewsList] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     total: 0,
     limit: 10
   });
-
-  const categories = [
-    { value: 'technology', label: language === 'ur' ? 'ٹیکنالوجی' : 'Technology' },
-    { value: 'business', label: language === 'ur' ? 'کاروبار' : 'Business' },
-    { value: 'sports', label: language === 'ur' ? 'کھیل' : 'Sports' },
-    { value: 'entertainment', label: language === 'ur' ? 'تفریح' : 'Entertainment' },
-    { value: 'health', label: language === 'ur' ? 'صحت' : 'Health' },
-    { value: 'politics', label: language === 'ur' ? 'سیاست' : 'Politics' },
-    { value: 'science', label: language === 'ur' ? 'سائنس' : 'Science' },
-    { value: 'important', label: language === 'ur' ? 'اہم خبریں' : 'Important' },
-    { value: 'market-updates', label: language === 'ur' ? 'مارکیٹ اپڈیٹس' : 'Market Updates' },
-    { value: 'other', label: language === 'ur' ? 'دیگر' : 'Other' }
-  ];
 
   // Toast notification helper
   const showToast = (message, type = 'info') => {
@@ -114,6 +103,30 @@ const AdminNews = () => {
 
   const closeToast = () => {
     setToast(null);
+  };
+
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const response = await apiJSON.get('/categories');
+      const fetchedCategories = response.data.categories || [];
+      
+      // Transform categories to the format expected by the form
+      const transformedCategories = fetchedCategories.map(cat => ({
+        value: cat.name.toLowerCase().replace(/\s+/g, '-'),
+        label: cat.name,
+        description: cat.description
+      }));
+      
+      setCategories(transformedCategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Fallback to empty array if categories can't be loaded
+      setCategories([]);
+    } finally {
+      setCategoriesLoading(false);
+    }
   };
 
   // Fetch news from API
@@ -148,7 +161,12 @@ const AdminNews = () => {
     }
   };
 
-  // Load news on component mount and when filters change
+  // Load categories and news on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Load news when filters change
   useEffect(() => {
     fetchNews(1);
   }, [searchTerm, filterStatus, filterCategory]);
@@ -508,9 +526,13 @@ const AdminNews = () => {
                 className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm ${language === 'ur' ? 'font-urdu text-right' : 'font-english'}`}
               >
                 <option value="all">{t.allCategories}</option>
-                {categories.map(category => (
-                  <option key={category.value} value={category.value}>{category.label}</option>
-                ))}
+                {categoriesLoading ? (
+                  <option disabled>{language === 'ur' ? 'لوڈ ہو رہا ہے...' : 'Loading...'}</option>
+                ) : (
+                  categories.map(category => (
+                    <option key={category.value} value={category.value}>{category.label}</option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -761,12 +783,31 @@ const AdminNews = () => {
                       value={newArticle.category}
                       onChange={(e) => setNewArticle({...newArticle, category: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={categoriesLoading}
                     >
-                      <option value="">{language === 'ur' ? 'کیٹگری منتخب کریں' : 'Select Category'}</option>
+                      <option value="">
+                        {categoriesLoading 
+                          ? (language === 'ur' ? 'کیٹگریز لوڈ ہو رہی ہیں...' : 'Loading categories...')
+                          : (language === 'ur' ? 'کیٹگری منتخب کریں' : 'Select Category')
+                        }
+                      </option>
                       {categories.map(category => (
                         <option key={category.value} value={category.value}>{category.label}</option>
                       ))}
+                      {!categoriesLoading && categories.length === 0 && (
+                        <option value="" disabled>
+                          {language === 'ur' ? 'کوئی کیٹگری دستیاب نہیں' : 'No categories available'}
+                        </option>
+                      )}
                     </select>
+                    {!categoriesLoading && categories.length === 0 && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {language === 'ur' 
+                          ? 'پہلے کیٹگری میناجمنٹ سے کیٹگریز شامل کریں' 
+                          : 'Please add categories from Category Management first'
+                        }
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -1,11 +1,15 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, User, Mail, Youtube, Instagram, Twitter, Facebook, TrendingUp, Settings } from 'lucide-react';
 import useAuthStore from '../stores/authStore';
+import { apiJSON } from '../lib/axios';
 
-const Header = ({ onCategoryClick, news = [] }) => {
+const Header = ({ news = [] }) => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   // Get auth store data
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -17,19 +21,32 @@ const Header = ({ onCategoryClick, news = [] }) => {
     await logout();
   };
 
-  // Categories data
-  const categories = [
-    { name: 'technology', label: 'ٹیکنالوجی', count: news.filter(n => n.category === 'technology').length },
-    { name: 'business', label: 'کاروبار', count: news.filter(n => n.category === 'business').length },
-    { name: 'sports', label: 'کھیل', count: news.filter(n => n.category === 'sports').length },
-    { name: 'entertainment', label: 'تفریح', count: news.filter(n => n.category === 'entertainment').length },
-    { name: 'health', label: 'صحت', count: news.filter(n => n.category === 'health').length },
-    { name: 'politics', label: 'سیاست', count: news.filter(n => n.category === 'politics').length },
-    { name: 'science', label: 'سائنس', count: news.filter(n => n.category === 'science').length },
-    { name: 'important', label: 'اہم خبریں', count: news.filter(n => n.category === 'important').length },
-    { name: 'market-updates', label: 'مارکیٹ اپڈیٹس', count: news.filter(n => n.category === 'market-updates').length },
-    { name: 'other', label: 'دیگر', count: news.filter(n => n.category === 'other').length }
-  ];
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await apiJSON.get('/categories');
+        const fetchedCategories = response.data.categories || [];
+        
+        // Transform categories and add counts
+        const categoriesWithCounts = fetchedCategories.map(cat => ({
+          name: cat.name.toLowerCase(),
+          label: cat.name,
+          count: news.filter(n => n.category && n.category.toLowerCase() === cat.name.toLowerCase()).length
+        }));
+        
+        setCategories(categoriesWithCounts);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, [news]); // Re-fetch when news changes to update counts
 
   // Get top 4 categories with most news
   const topCategories = categories
@@ -74,7 +91,7 @@ const Header = ({ onCategoryClick, news = [] }) => {
                 />
               </div>
               <div className="mr-3 text-gray-600">
-                <div className="text-sm font-medium">آٹو ٹریڈنگ پلیٹ فارم</div>
+                <div className="text-sm font-medium">آرکینم ٹائیڈ پریس</div>
               </div>
             </Link>
           </div>
@@ -84,7 +101,7 @@ const Header = ({ onCategoryClick, news = [] }) => {
             {topCategories.map((category, index) => (
               <button
                 key={category.name}
-                onClick={() => onCategoryClick && onCategoryClick(category.name)}
+                onClick={() => navigate(`/category/${category.name}`)}
                 className={`px-4 py-2 rounded font-medium transition-colors ${
                   index === 0 
                     ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
@@ -172,7 +189,7 @@ const Header = ({ onCategoryClick, news = [] }) => {
                 <button
                   key={category.name}
                   onClick={() => {
-                    onCategoryClick && onCategoryClick(category.name);
+                    navigate(`/category/${category.name}`);
                     setIsMenuOpen(false);
                   }}
                   className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-indigo-600 text-right"

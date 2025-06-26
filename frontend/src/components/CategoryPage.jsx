@@ -1,8 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NewsCard from './NewsCard';
+import { apiJSON } from '../lib/axios';
 
 const CategoryPage = ({ category, news, onNewsClick, onBack }) => {
   const [sortBy, setSortBy] = useState('newest');
+  const [categories, setCategories] = useState([]);
+  
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await apiJSON.get('/categories');
+        setCategories(response.data.categories || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   
   // Filter news by category
   const categoryNews = news.filter(item => item.category === category);
@@ -21,53 +38,23 @@ const CategoryPage = ({ category, news, onNewsClick, onBack }) => {
     }
   });
 
-  // Get category display name
+  // Get category display name - use API data or fallback to category name
   const getCategoryLabel = (cat) => {
-    const labels = {
-      technology: 'ٹیکنالوجی',
-      business: 'کاروبار', 
-      sports: 'کھیل',
-      entertainment: 'تفریح',
-      health: 'صحت',
-      politics: 'سیاست',
-      science: 'سائنس',
-      important: 'اہم خبریں',
-      'market-updates': 'مارکیٹ اپڈیٹس',
-      other: 'دیگر'
-    };
-    return labels[cat] || cat;
+    const categoryData = categories.find(c => c.name.toLowerCase() === cat.toLowerCase());
+    return categoryData ? categoryData.name : cat;
   };
 
+  // Dynamic color generation based on category name
   const getCategoryColor = (cat) => {
-    const colors = {
-      technology: 'bg-blue-500',
-      business: 'bg-green-500',
-      sports: 'bg-red-500',
-      entertainment: 'bg-purple-500',
-      health: 'bg-emerald-500',
-      politics: 'bg-orange-500',
-      science: 'bg-cyan-500',
-      important: 'bg-rose-500',
-      'market-updates': 'bg-teal-500',
-      other: 'bg-gray-500'
-    };
-    return colors[cat] || 'bg-gray-500';
+    const colors = ['bg-blue-500', 'bg-green-500', 'bg-red-500', 'bg-purple-500', 'bg-emerald-500', 'bg-orange-500', 'bg-cyan-500', 'bg-rose-500', 'bg-teal-500', 'bg-gray-500'];
+    const index = cat.length % colors.length;
+    return colors[index];
   };
 
+  // Get category description from API or use generic description
   const getCategoryDescription = (cat) => {
-    const descriptions = {
-      technology: 'جدید ترین ٹیکنالوجی اور ڈیجیٹل انقلاب کی خبریں',
-      business: 'کاروباری دنیا، اقتصادی تجزیے اور مالی خبریں',
-      sports: 'کھیلوں کی دنیا کی تازہ ترین خبریں اور تجزیے',
-      entertainment: 'تفریحی دنیا کی رنگا رنگ خبریں',
-      health: 'صحت اور طبی معلومات کی مفید خبریں',
-      politics: 'سیاسی واقعات اور ملکی و بین الاقوامی سیاست',
-      science: 'سائنسی دریافتوں اور تحقیق کی خبریں',
-      important: 'فوری اور اہم ترین خبریں',
-      'market-updates': 'مارکیٹ اور تجارتی اپڈیٹس',
-      other: 'مختلف موضوعات کی خبریں'
-    };
-    return descriptions[cat] || '';
+    const categoryData = categories.find(c => c.name.toLowerCase() === cat.toLowerCase());
+    return categoryData?.description || `${getCategoryLabel(cat)} کی تازہ ترین خبریں اور اپڈیٹس`;
   };
 
   return (
@@ -100,26 +87,7 @@ const CategoryPage = ({ category, news, onNewsClick, onBack }) => {
           </div>
         </div>
 
-        {/* Filters and Sort */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <span className="text-gray-700 font-medium">ترتیب:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
-              >
-                <option value="newest">تازہ ترین</option>
-                <option value="oldest">پرانی ترین</option>
-                <option value="views">زیادہ دیکھی گئی</option>
-              </select>
-            </div>
-            <div className="text-sm text-gray-600">
-              {sortedNews.length} خبریں نظر آ رہی ہیں
-            </div>
-          </div>
-        </div>
+
 
         {/* News Grid */}
         {sortedNews.length > 0 ? (
@@ -127,7 +95,13 @@ const CategoryPage = ({ category, news, onNewsClick, onBack }) => {
             {sortedNews.map((newsItem) => (
               <div
                 key={newsItem.id}
-                onClick={() => onNewsClick && onNewsClick(newsItem)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('News clicked:', newsItem.title);
+                  if (onNewsClick) {
+                    onNewsClick(newsItem);
+                  }
+                }}
                 className="cursor-pointer transform hover:scale-105 transition-transform duration-200"
               >
                 <NewsCard news={newsItem} />

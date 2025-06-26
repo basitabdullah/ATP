@@ -94,12 +94,12 @@ const AdminUsers = () => {
             <h1 className="text-2xl font-bold text-gray-800">{t.userManagement}</h1>
             <p className="text-gray-600">{t.userManagementDesc}</p>
           </div>
-          <div className={`flex ${language === 'ur' ? 'space-x-2 space-x-reverse' : 'space-x-2'}`}>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          <div>
+            <button 
+              onClick={() => window.location.href = '/register'}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
               {t.addUser}
-            </button>
-            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
-              {t.export}
             </button>
           </div>
         </div>

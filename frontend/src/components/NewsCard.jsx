@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import useAuthStore from '../stores/authStore';
 import api from '../lib/axios';
-import jsPDF from 'jspdf';
 import { HiArrowDownTray, HiClock, HiTag } from 'react-icons/hi2';
 
 const NewsCard = ({ news, featured = false, small = false }) => {
@@ -10,6 +9,7 @@ const NewsCard = ({ news, featured = false, small = false }) => {
 
   const handleDownload = async (e) => {
     e.stopPropagation(); // Prevent card click event
+    e.preventDefault(); // Prevent default behavior
     
     if (!canDownload()) {
       alert('Download access is available for premium users only. Please upgrade your account or login.');
@@ -26,109 +26,58 @@ const NewsCard = ({ news, featured = false, small = false }) => {
       // Call API to increment download counter
       await api.patch(`/news/${newsId}/download`);
       
-      // Create simple PDF that handles Urdu text properly
-      const doc = new jsPDF();
-      doc.setFont('helvetica');
+      // Create text content for download
+      const currentDate = new Date(news.createdAt || Date.now()).toLocaleDateString('ur-PK', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
       
-      // Function to safely convert text for PDF
-      const safeTextForPDF = (text) => {
-        if (!text) return '';
-        const hasUrdu = /[\u0600-\u06FF\u0750-\u077F]/.test(text);
-        
-        if (hasUrdu) {
-          return '[Urdu/Arabic content - view original article]';
-        } else {
-          return text.replace(/[^\x20-\x7E]/g, '').trim();
-        }
-      };
+      const textContent = `
+ATP News Article
+================
+
+Title: ${news.title || 'Untitled News'}
+
+Category: ${news.category || 'General'}
+Author: ${news.source || 'ATP News'}
+Published: ${currentDate}
+
+Summary:
+--------
+${news.excerpt || 'No summary available'}
+
+Full Article:
+-------------
+${news.content || 'Content not available'}
+
+Tags: ${news.tags ? news.tags.join(', ') : 'No tags'}
+
+---
+Downloaded from ATP News Platform
+Download Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
+Visit ATP News for the latest updates and complete articles
+`;
+
+      // Create and download the text file
+      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
       
-      // Add header
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 102, 204);
-      doc.text('ATP News Download', 20, 30);
+      // Generate filename with safe characters
+      const safeTitle = news.title 
+        ? news.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').substring(0, 50)
+        : 'news_article';
+      const fileName = `${safeTitle}_${Date.now()}.txt`;
       
-      // Add separator line
-      doc.setDrawColor(0, 102, 204);
-      doc.line(20, 40, 190, 40);
-      
-      let yPos = 55;
-      
-      // Add title info
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0);
-      doc.text('Article Information:', 20, yPos);
-      yPos += 12;
-      
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(60);
-      
-      const titleText = safeTextForPDF(news.title) || 'News Article';
-      const titleLines = doc.splitTextToSize(`Title: ${titleText}`, 170);
-      doc.text(titleLines, 20, yPos);
-      yPos += titleLines.length * 6 + 5;
-      
-      const category = safeTextForPDF(news.category) || 'General';
-      doc.text(`Category: ${category}`, 20, yPos);
-      yPos += 8;
-      doc.text(`Downloaded from: ATP News Platform`, 20, yPos);
-      yPos += 8;
-      doc.text(`Download Date: ${new Date().toLocaleDateString()}`, 20, yPos);
-      yPos += 15;
-      
-      // Check if has Urdu content
-      const hasUrdu = /[\u0600-\u06FF\u0750-\u077F]/.test(news.title || '') || 
-                     /[\u0600-\u06FF\u0750-\u077F]/.test(news.excerpt || '');
-      
-      if (hasUrdu) {
-        // Urdu content notice
-        doc.setFont('helvetica', 'bold');
-        doc.text('Notice:', 20, yPos);
-        yPos += 8;
-        doc.setFont('helvetica', 'normal');
-        
-        const notice = [
-          'This article contains Urdu/Arabic text that cannot be',
-          'properly displayed in PDF format due to font limitations.',
-          '',
-          'To read the complete article with proper formatting,',
-          'please view it on the ATP News website.',
-          '',
-          'This PDF serves as a download receipt.'
-        ];
-        
-        notice.forEach(line => {
-          if (line === '') {
-            yPos += 4;
-          } else {
-            const lines = doc.splitTextToSize(line, 170);
-            doc.text(lines, 20, yPos);
-            yPos += lines.length * 6 + 2;
-          }
-        });
-      } else {
-        // English content
-        if (news.excerpt) {
-          doc.setFont('helvetica', 'bold');
-          doc.text('Summary:', 20, yPos);
-          yPos += 8;
-          doc.setFont('helvetica', 'normal');
-          const excerptLines = doc.splitTextToSize(news.excerpt, 170);
-          doc.text(excerptLines, 20, yPos);
-        }
-      }
-      
-      // Add footer
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text('ATP News Platform - Visit website for complete articles', 20, 270);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 275);
-      
-      // Generate simple filename
-      const fileName = `atp_news_download_${Date.now()}.pdf`;
-      doc.save(fileName);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
     } catch (error) {
       console.error('Download error:', error);
@@ -213,7 +162,7 @@ const NewsCard = ({ news, featured = false, small = false }) => {
                 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 disabled:from-blue-400 disabled:to-blue-500'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-300'
             }`}
-            title={canDownload() ? 'Download this news as PDF' : 'Premium access required'}
+            title={canDownload() ? 'Download this news as text file' : 'Premium access required'}
           >
             <HiArrowDownTray className={`w-4 h-4 transition-transform ${isDownloading ? 'animate-bounce' : 'group-hover:scale-110'}`} />
           </button>

@@ -27,8 +27,20 @@ import {
   uploadNewsImage,
   handleMulterError
 } from "../middlewares/uploadMiddleware.js";
+import Category from "../models/categoryModel.js";
 
 const router = express.Router();
+
+// Helper function to get valid categories
+const getValidCategories = async () => {
+  try {
+    const categories = await Category.find();
+    return categories.map(cat => cat.name.toLowerCase());
+  } catch (error) {
+    console.error('Error fetching categories for validation:', error);
+    return []; // Return empty array if can't fetch categories
+  }
+};
 
 // Validation middleware - flexible for drafts, strict for published
 const validateNews = [
@@ -49,16 +61,20 @@ const validateNews = [
       return true;
     }),
   body("category")
-    .custom((value, { req }) => {
+    .custom(async (value, { req }) => {
       const status = req.body.status || "draft";
-      const validCategories = ["technology", "business", "sports", "entertainment", "health", "politics", "science", "important", "market-updates", "other"];
+      const validCategories = await getValidCategories();
+      
       if (status === "published") {
-        if (!validCategories.includes(value)) {
+        if (!value) {
+          throw new Error("Category is required for published news");
+        }
+        if (validCategories.length > 0 && !validCategories.includes(value.toLowerCase())) {
           throw new Error("Invalid category for published news");
         }
       } else {
         // For drafts, category is optional but must be valid if provided
-        if (value && !validCategories.includes(value)) {
+        if (value && validCategories.length > 0 && !validCategories.includes(value.toLowerCase())) {
           throw new Error("Invalid category");
         }
       }
@@ -111,8 +127,15 @@ const validateNewsUpdate = [
     .withMessage("Title must be between 5 and 200 characters"),
   body("category")
     .optional()
-    .isIn(["technology", "business", "sports", "entertainment", "health", "politics", "science", "important", "market-updates", "other"])
-    .withMessage("Invalid category"),
+    .custom(async (value) => {
+      if (value) {
+        const validCategories = await getValidCategories();
+        if (validCategories.length > 0 && !validCategories.includes(value.toLowerCase())) {
+          throw new Error("Invalid category");
+        }
+      }
+      return true;
+    }),
   body("excerpt")
     .optional()
     .trim()

@@ -13,9 +13,8 @@ const AdminLayout = ({ children, currentPage = 'dashboard' }) => {
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: '📊', path: '/admin' },
     { id: 'news', label: t.newsManagement, icon: '📰', path: '/admin/news' },
-    // { id: 'categories', label: t.categories, icon: '📂', path: '/admin/categories' },
+    { id: 'categories', label: t.categories, icon: '📂', path: '/admin/categories' },
     { id: 'users', label: t.users, icon: '👥', path: '/admin/users' },
-
     // { id: 'settings', label: t.settings, icon: '⚙️', path: '/admin/settings' },
   ];
 

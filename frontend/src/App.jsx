@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect, createContext, useContext } from 'react';
 import Header from './components/Header';
 import NewsCard from './components/NewsCard';
 import NewsDetail from './components/NewsDetail';
@@ -12,24 +12,29 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminNews from './components/AdminNews';
 import AdminUsers from './components/AdminUsers';
 import AdminCategories from './components/AdminCategories';
-
+import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import AdminSettings from './components/AdminSettings';
 import { LanguageProvider } from './context/LanguageContext';
 import useAuthStore from './stores/authStore';
 import { apiJSON } from './lib/axios';
 
-// Main News Component
-const NewsApp = () => {
+// News Context Provider to share news data across components
+
+const NewsContext = createContext();
+
+export const useNews = () => {
+  const context = useContext(NewsContext);
+  if (!context) {
+    throw new Error('useNews must be used within a NewsProvider');
+  }
+  return context;
+};
+
+// News Provider Component
+const NewsProvider = ({ children }) => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedNews, setSelectedNews] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
   const [error, setError] = useState(null);
-
-  // Initialize auth state
-  const { initializeAuth } = useAuthStore();
-
-
 
   // Fetch news from API
   const fetchNews = async () => {
@@ -83,24 +88,101 @@ const NewsApp = () => {
   };
 
   useEffect(() => {
+    fetchNews();
+  }, []);
+
+  return (
+    <NewsContext.Provider value={{ news, loading, error, fetchNews }}>
+      {children}
+    </NewsContext.Provider>
+  );
+};
+
+// News Detail Page Component
+const NewsDetailPage = () => {
+  const { newsId } = useParams();
+  const { news } = useNews();
+  const navigate = useNavigate();
+  
+  const selectedNews = news.find(item => item.id === newsId);
+  
+  const handleBack = () => {
+    navigate('/');
+  };
+  
+  if (!selectedNews) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <p className="text-red-600 text-lg mb-4">خبر نہیں ملی</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            واپس جائیں
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="min-h-screen bg-gray-50 font-urdu">
+      <Header news={news} />
+      <NewsDetail news={selectedNews} onBack={handleBack} allNews={news} />
+      <Footer />
+    </div>
+  );
+};
+
+// Category Page Component
+const CategoryPageRoute = () => {
+  const { categoryName } = useParams();
+  const { news } = useNews();
+  const navigate = useNavigate();
+  
+  const handleBack = () => {
+    navigate('/');
+  };
+  
+  const handleNewsClick = (newsItem) => {
+    navigate(`/news/${newsItem.id}`);
+  };
+  
+  return (
+    <div className="min-h-screen bg-gray-50 font-urdu">
+      <Header news={news} />
+      <CategoryPage 
+        category={categoryName} 
+        news={news} 
+        onNewsClick={handleNewsClick} 
+        onBack={handleBack} 
+      />
+      <Footer />
+    </div>
+  );
+};
+
+// Main News Component
+const NewsApp = () => {
+  const { news, loading, error, fetchNews } = useNews();
+  const navigate = useNavigate();
+
+  // Initialize auth state
+  const { initializeAuth } = useAuthStore();
+
+  useEffect(() => {
     // Initialize auth state when app loads
     initializeAuth();
-    
-    // Fetch news from API
-    fetchNews();
   }, [initializeAuth]);
 
   const handleNewsClick = (newsItem) => {
-    setSelectedNews(newsItem);
+    navigate(`/news/${newsItem.id}`);
   };
 
   const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-  };
-
-  const handleBackToList = () => {
-    setSelectedNews(null);
-    setSelectedCategory(null);
+    navigate(`/category/${category}`);
   };
 
   if (loading) {
@@ -127,33 +209,6 @@ const NewsApp = () => {
             دوبارہ کوشش کریں
           </button>
         </div>
-      </div>
-    );
-      }
-
-  // Show category page if a category is selected
-  if (selectedCategory) {
-    return (
-      <div className="min-h-screen bg-gray-50 font-urdu">
-        <Header onCategoryClick={handleCategoryClick} news={news} />
-        <CategoryPage 
-          category={selectedCategory} 
-          news={news} 
-          onNewsClick={handleNewsClick} 
-          onBack={handleBackToList} 
-        />
-        <Footer />
-      </div>
-    );
-  }
-
-  // Show news detail page if a news item is selected
-  if (selectedNews) {
-    return (
-      <div className="min-h-screen bg-gray-50 font-urdu">
-        <Header onCategoryClick={handleCategoryClick} news={news} />
-        <NewsDetail news={selectedNews} onBack={handleBackToList} allNews={news} />
-        <Footer />
       </div>
     );
   }
@@ -275,17 +330,21 @@ function App() {
   return (
     <LanguageProvider>
       <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/news" element={<AdminNews />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/categories" element={<AdminCategories />} />
-
-          <Route path="/admin/settings" element={<AdminSettings />} />
-          <Route path="/" element={<NewsApp />} />
-        </Routes>
+        <NewsProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/news" element={<AdminNews />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/categories" element={<AdminCategories />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/news/:newsId" element={<NewsDetailPage />} />
+            <Route path="/category/:categoryName" element={<CategoryPageRoute />} />
+            <Route path="/" element={<NewsApp />} />
+          </Routes>
+        </NewsProvider>
       </Router>
     </LanguageProvider>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { useLanguage, translations } from '../context/LanguageContext';
 import useUserStore from '../stores/userStore';
@@ -95,12 +96,12 @@ const AdminUsers = () => {
             <p className="text-gray-600">{t.userManagementDesc}</p>
           </div>
           <div>
-            <button 
-              onClick={() => window.location.href = '/register'}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            <Link 
+              to="/register"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-block"
             >
               {t.addUser}
-            </button>
+            </Link>
           </div>
         </div>
 

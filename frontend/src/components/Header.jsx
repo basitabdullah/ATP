@@ -54,6 +54,9 @@ const Header = ({ news = [] }) => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 4);
 
+  // Latest three news for ticker
+  const latestNews = news.slice(0, 3);
+
   return (
     <header className="bg-white shadow-sm">
       {/* Top Bar */}
@@ -76,6 +79,26 @@ const Header = ({ news = [] }) => {
           </div>
         </div>
       </div>
+
+      {/* Latest News Ticker Bar */}
+      {latestNews.length > 0 && (
+        <div className="bg-red-600 text-white py-2">
+          <div className="container mx-auto px-4 flex items-center space-x-4 space-x-reverse overflow-hidden">
+            <span className="bg-white text-red-600 font-bold px-2 py-1">تازہ خبریں</span>
+            <div className="flex-1 flex items-center overflow-x-auto scrollbar-hide">
+              {latestNews.map((item) => (
+                <span
+                  key={item.id}
+                  className="mx-4 cursor-pointer hover:underline whitespace-nowrap"
+                  onClick={() => navigate(`/news/${item.id}`)}
+                >
+                  {item.title.length > 90 ? item.title.substring(0, 90) + '...' : item.title}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Header */}
       <div className="container mx-auto px-4 py-4">

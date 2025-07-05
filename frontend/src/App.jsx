@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, createContext, useContext } from 'react';
 import Header from './components/Header';
 import NewsCard from './components/NewsCard';
@@ -99,10 +99,19 @@ const NewsProvider = ({ children }) => {
 };
 
 // News Detail Page Component
+// News Detail Page Component
 const NewsDetailPage = () => {
   const { newsId } = useParams();
   const { news } = useNews();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
   
   const selectedNews = news.find(item => item.id === newsId);
   
@@ -141,12 +150,20 @@ const CategoryPageRoute = () => {
   const { categoryName } = useParams();
   const { news } = useNews();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   
   const handleBack = () => {
     navigate('/');
   };
   
   const handleNewsClick = (newsItem) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Redirect to login page if not authenticated
+      navigate('/login');
+      return;
+    }
+    // Navigate to news detail if authenticated
     navigate(`/news/${newsItem.id}`);
   };
   
@@ -168,9 +185,7 @@ const CategoryPageRoute = () => {
 const NewsApp = () => {
   const { news, loading, error, fetchNews } = useNews();
   const navigate = useNavigate();
-
-  // Initialize auth state
-  const { initializeAuth } = useAuthStore();
+  const { initializeAuth, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     // Initialize auth state when app loads
@@ -178,6 +193,13 @@ const NewsApp = () => {
   }, [initializeAuth]);
 
   const handleNewsClick = (newsItem) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Redirect to login page if not authenticated
+      navigate('/login');
+      return;
+    }
+    // Navigate to news detail if authenticated
     navigate(`/news/${newsItem.id}`);
   };
 
@@ -232,7 +254,7 @@ const NewsApp = () => {
                 </button>
               </div>
               <h1 className="text-2xl font-bold text-gray-800 border-b-2 border-blue-600 pb-2">
-                اہم خبریں
+                شہ سرخیاں
               </h1>
             </div>
 
@@ -240,7 +262,7 @@ const NewsApp = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               {/* Left Side Important News */}
               <div className="space-y-4">
-                {news.filter(item => item.category === 'important').slice(0, 3).map((item) => (
+                {news.filter(item => item.category === 'شہ سرخیاں').slice(0, 3).map((item) => (
                   <div 
                     key={item.id} 
                     className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
@@ -263,24 +285,24 @@ const NewsApp = () => {
                     </div>
                   </div>
                 ))}
-                {news.filter(item => item.category === 'important').length === 0 && (
+                {news.filter(item => item.category === 'شہ سرخیاں').length === 0 && (
                   <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
                     <div className="text-gray-400 text-4xl mb-2">🚨</div>
-                    <p className="text-gray-600">ابھی کوئی اہم خبر دستیاب نہیں</p>
+                    <p className="text-gray-600">ابھی کوئی شہ سرخی دستیاب نہیں</p>
                   </div>
                 )}
               </div>
 
               {/* Featured News */}
               <div className="lg:col-span-2">
-                {news.filter(item => item.category === 'important').length > 0 ? (
-                  <div onClick={() => handleNewsClick(news.filter(item => item.category === 'important')[0])} className="cursor-pointer">
-                    <NewsCard news={news.filter(item => item.category === 'important')[0]} featured={true} />
+                {news.filter(item => item.category === 'شہ سرخیاں').length > 0 ? (
+                  <div onClick={() => handleNewsClick(news.filter(item => item.category === 'شہ سرخیاں')[0])} className="cursor-pointer">
+                    <NewsCard news={news.filter(item => item.category === 'شہ سرخیاں')[0]} featured={true} />
                   </div>
                 ) : (
                   <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
                     <div className="text-gray-400 text-6xl mb-4">📰</div>
-                    <p className="text-gray-600">ابھی کوئی اہم خبر دستیاب نہیں</p>
+                    <p className="text-gray-600">ابھی کوئی شہ سرخی دستیاب نہیں</p>
                   </div>
                 )}
               </div>
@@ -289,7 +311,7 @@ const NewsApp = () => {
             {/* Latest News Articles Grid */}
             <div className="mb-6">
               <h2 className="text-xl font-bold text-gray-800 border-b-2 border-green-600 pb-2 mb-6 text-right">
-                تازہ خبریں
+                تمام خبریں
               </h2>
               {news.length === 0 ? (
                 <div className="text-center py-12">

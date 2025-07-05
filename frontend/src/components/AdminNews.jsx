@@ -114,7 +114,7 @@ const AdminNews = () => {
       
       // Transform categories to the format expected by the form
       const transformedCategories = fetchedCategories.map(cat => ({
-        value: cat.name.toLowerCase().replace(/\s+/g, '-'),
+        value: cat.name.toLowerCase(), // Removed replace() to match backend validation
         label: cat.name,
         description: cat.description
       }));
@@ -946,4 +946,4 @@ const AdminNews = () => {
   );
 };
 
-export default AdminNews; 
+export default AdminNews;

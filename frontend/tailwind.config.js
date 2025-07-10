@@ -20,6 +20,7 @@ export default {
           900: '#1e3a8a',
         }
       }
+      
     },
   },
   plugins: [],

@@ -141,19 +141,54 @@ Visit ATP News for the latest updates and complete articles
   }
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200">
-      <div className="relative">
-        <img
-          src={news.image}
-          alt={news.title}
-          className="w-full h-48 object-cover"
-        />
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-800 text-right leading-relaxed mb-2 whitespace-nowrap overflow-hidden text-ellipsis">
+    <div className="flex flex-col md:flex-row border border-gray-300 bg-white rounded-md overflow-hidden hover:shadow-md transition-shadow">
+      {/* Image */}
+      <img
+        src={news.image}
+        alt={news.title}
+        className="w-full md:w-56 h-48 md:h-auto object-cover flex-shrink-0"
+      />
+
+      {/* Content */}
+      <div className="px-6 py-4 md:px-8 flex flex-col flex-1">
+        {/* Title */}
+        <h3 className="font-bold text-gray-800 text-lg mb-2 py-1 line-clamp-2">
           {news.title}
         </h3>
-        <div className="flex items-center justify-between gap-3">
+
+        {/* Tags and time */}
+        <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
+          {/* Tags */}
+          {news.tags && news.tags.length > 0 && (
+            news.tags.slice(0, 3).map((tag, idx) => (
+              <span
+                key={idx}
+                className="bg-gray-100 text-gray-600 px-2 py-1 rounded font-medium"
+              >
+                {tag}
+              </span>
+            ))
+          )}
+          {/* Date */}
+          {news.time && (
+            <span className="text-red-600 font-medium">{news.time}</span>
+          )}
+        </div>
+
+        {/* Excerpt */}
+        <p className="text-gray-700 text-sm flex-1 line-clamp-3 py-2 mb-4">
+          {news.excerpt || (news.content ? news.content.substring(0, 220) + '...' : '')}
+        </p>
+
+        {/* Download button & category/time */}
+        <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+            <HiTag className="w-4 h-4 text-yellow-600" />
+            <span>{news.category}</span>
+            <span className="mx-1">•</span>
+            <HiClock className="w-4 h-4" />
+            <span>{news.time}</span>
+          </div>
           <button
             onClick={handleDownload}
             disabled={isDownloading}
@@ -166,17 +201,6 @@ Visit ATP News for the latest updates and complete articles
           >
             <HiArrowDownTray className={`w-4 h-4 transition-transform ${isDownloading ? 'animate-bounce' : 'group-hover:scale-110'}`} />
           </button>
-          <div className="text-sm text-gray-500 text-right flex items-center justify-end gap-2 whitespace-nowrap overflow-hidden">
-            <span className="text-yellow-600 flex items-center gap-1">
-              <HiTag className="w-3 h-3" />
-              {news.category}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <HiClock className="w-3 h-3" />
-              {news.time}
-            </span>
-          </div>
         </div>
       </div>
     </div>

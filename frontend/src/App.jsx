@@ -14,6 +14,7 @@ import AdminUsers from './components/AdminUsers';
 import AdminCategories from './components/AdminCategories';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import AdminSettings from './components/AdminSettings';
+import UserSettings from './components/UserSettings';
 import { LanguageProvider } from './context/LanguageContext';
 import useAuthStore from './stores/authStore';
 import { apiJSON } from './lib/axios';
@@ -121,7 +122,7 @@ const NewsDetailPage = () => {
   
   if (!selectedNews) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#050b12] flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <p className="text-red-600 text-lg mb-4">خبر نہیں ملی</p>
@@ -184,8 +185,58 @@ const CategoryPageRoute = () => {
 // Main News Component
 const NewsApp = () => {
   const { news, loading, error, fetchNews } = useNews();
+  // Splash screen control – ensure logo video plays for its duration (e.g., 3 s)
+  const [splashDone, setSplashDone] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashDone(true), 4000); // adjust to video length if needed
+    return () => clearTimeout(timer);
+  }, []);
   const navigate = useNavigate();
   const { initializeAuth, isAuthenticated } = useAuthStore();
+  const [currentPage, setCurrentPage] = useState(1);
+  const newsPerPage = 5;
+  
+  // Calculate pagination
+  const indexOfLastNews = currentPage * newsPerPage;
+  const indexOfFirstNews = indexOfLastNews - newsPerPage;
+  const currentNews = news.slice(indexOfFirstNews, indexOfLastNews);
+  const totalPages = Math.ceil(news.length / newsPerPage);
+
+  // Headlines (شہ سرخیاں) helpers
+  const headlineCategories = ['مقامی خبریں', 'دنیا', 'بر صغیر'];
+  const latestHeadlines = [];
+  const seenCats = new Set();
+  for (const item of news) {
+    if (headlineCategories.includes(item.category) && !seenCats.has(item.category)) {
+      latestHeadlines.push(item);
+      seenCats.add(item.category);
+    }
+    if (seenCats.size === headlineCategories.length) break;
+  }
+  const firstHeadline = latestHeadlines[0];
+  
+  // Change page
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo(0, 0);
+  };
+  
+  // Go to next page
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      window.scrollTo(0, 0);
+    }
+  };
+  
+  // Go to previous page
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      window.scrollTo(0, 0);
+    }
+  };
 
   useEffect(() => {
     // Initialize auth state when app loads
@@ -207,20 +258,25 @@ const NewsApp = () => {
     navigate(`/category/${category}`);
   };
 
-  if (loading) {
+  // Show splash / loading screen until the logo animation finishes AND data is loaded
+  if (!splashDone || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">ATP لوڈ ہو رہا ہے...</p>
-        </div>
+      <div className="min-h-screen bg-[#050b12] flex items-center justify-center">
+        {/* Logo intro video */}
+        <video
+          src="/logo.mp4"  /* Place your MP4 in the /public folder so it's served from the root */
+          className="w-48 h-48"
+          autoPlay
+          loop
+          muted
+        />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#050b12] flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <p className="text-red-600 text-lg mb-4">{error}</p>
@@ -246,12 +302,12 @@ const NewsApp = () => {
             {/* Navigation Arrows */}
             <div className="flex justify-between items-center mb-6">
               <div className="flex space-x-2 space-x-reverse">
-                <button className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50">
+                {/* <button className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50">
                   ←
                 </button>
                 <button className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50">
                   →
-                </button>
+                </button> */}
               </div>
               <h1 className="text-2xl font-bold text-gray-800 border-b-2 border-blue-600 pb-2">
                 شہ سرخیاں
@@ -262,7 +318,7 @@ const NewsApp = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               {/* Left Side Important News */}
               <div className="space-y-4">
-                {news.filter(item => item.category === 'شہ سرخیاں').slice(0, 3).map((item) => (
+                {latestHeadlines.map((item) => (
                   <div 
                     key={item.id} 
                     className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
@@ -285,7 +341,7 @@ const NewsApp = () => {
                     </div>
                   </div>
                 ))}
-                {news.filter(item => item.category === 'شہ سرخیاں').length === 0 && (
+                {latestHeadlines.length === 0 && (
                   <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
                     <div className="text-gray-400 text-4xl mb-2">🚨</div>
                     <p className="text-gray-600">ابھی کوئی شہ سرخی دستیاب نہیں</p>
@@ -295,9 +351,9 @@ const NewsApp = () => {
 
               {/* Featured News */}
               <div className="lg:col-span-2">
-                {news.filter(item => item.category === 'شہ سرخیاں').length > 0 ? (
-                  <div onClick={() => handleNewsClick(news.filter(item => item.category === 'شہ سرخیاں')[0])} className="cursor-pointer">
-                    <NewsCard news={news.filter(item => item.category === 'شہ سرخیاں')[0]} featured={true} />
+                {firstHeadline ? (
+                  <div onClick={() => handleNewsClick(firstHeadline)} className="cursor-pointer">
+                    <NewsCard news={firstHeadline} featured={true} />
                   </div>
                 ) : (
                   <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -325,13 +381,50 @@ const NewsApp = () => {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {news.map((item) => (
+                <>
+                <div className="grid grid-cols-1 gap-6">
+                  {currentNews.map((item) => (
                     <div key={item.id} onClick={() => handleNewsClick(item)} className="cursor-pointer">
                       <NewsCard news={item} />
                     </div>
                   ))}
                 </div>
+                
+                {/* Pagination Controls */}
+                {news.length > newsPerPage && (
+                  <div className="flex justify-center mt-8 space-x-2 space-x-reverse">
+                    <button
+                      onClick={prevPage}
+                      disabled={currentPage === 1}
+                      className={`px-4 py-2 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    >
+                      سابقہ
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                      <button
+                        key={number}
+                        onClick={() => paginate(number)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          currentPage === number 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-white border border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        {number}
+                      </button>
+                    ))}
+                    
+                    <button
+                      onClick={nextPage}
+                      disabled={currentPage === totalPages}
+                      className={`px-4 py-2 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    >
+                      اگلا
+                    </button>
+                  </div>
+                )}
+              </>
               )}
             </div>
           </div>
@@ -362,6 +455,7 @@ function App() {
             <Route path="/admin/categories" element={<AdminCategories />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/settings" element={<UserSettings />} />
             <Route path="/news/:newsId" element={<NewsDetailPage />} />
             <Route path="/category/:categoryName" element={<CategoryPageRoute />} />
             <Route path="/" element={<NewsApp />} />

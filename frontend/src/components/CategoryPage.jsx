@@ -91,7 +91,7 @@ const CategoryPage = ({ category, news, onNewsClick, onBack }) => {
 
         {/* News Grid */}
         {sortedNews.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {sortedNews.map((newsItem) => (
               <div
                 key={newsItem.id}
@@ -102,7 +102,7 @@ const CategoryPage = ({ category, news, onNewsClick, onBack }) => {
                     onNewsClick(newsItem);
                   }
                 }}
-                className="cursor-pointer transform hover:scale-105 transition-transform duration-200"
+                className="cursor-pointer"
               >
                 <NewsCard news={newsItem} />
               </div>

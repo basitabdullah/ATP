@@ -54,8 +54,8 @@ const Header = ({ news = [] }) => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 4);
 
-  // Latest three news for ticker
-  const latestNews = news.slice(0, 3);
+  // Get latest news and duplicate for seamless ticker loop
+  const latestNews = [...news.slice(0, 3), ...news.slice(0, 3)];
 
   return (
     <header className="bg-white shadow-sm">
@@ -74,7 +74,7 @@ const Header = ({ news = [] }) => {
               </div>
             </div>
             <div className="text-yellow-300">
-              آخری اپ ڈیٹ: 10 جون، PM 11:23 2025
+              آخری اپ ڈیٹ: 6 جولی، PM 11:23 2025
             </div>
           </div>
         </div>
@@ -83,18 +83,19 @@ const Header = ({ news = [] }) => {
       {/* Latest News Ticker Bar */}
       {latestNews.length > 0 && (
         <div className="bg-red-600 text-white py-2">
-          <div className="container mx-auto px-4 flex items-center space-x-4 space-x-reverse overflow-hidden">
-            <span className="bg-white text-red-600 font-bold px-2 py-1">تازہ خبریں</span>
-            <div className="flex-1 flex items-center overflow-x-auto scrollbar-hide">
-              {latestNews.map((item) => (
-                <span
-                  key={item.id}
-                  className="mx-4 cursor-pointer hover:underline whitespace-nowrap"
-                  onClick={() => navigate(`/news/${item.id}`)}
-                >
-                  {item.title.length > 90 ? item.title.substring(0, 90) + '...' : item.title}
-                </span>
-              ))}
+          <div className="container mx-auto px-4 flex items-center space-x-4 space-x-reverse">
+            <span className="bg-white text-red-600 font-bold px-2 py-1 whitespace-nowrap">فوری خبر</span>
+            <div className="ticker-container">
+              <div className="ticker">
+                {latestNews.map((item, index) => (
+                  <span
+                    key={`${item.id}-${index}`}
+                    onClick={() => navigate(`/news/${item.id}`)}
+                  >
+                    {item.title.length > 90 ? item.title.substring(0, 90) + '...' : item.title}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -131,8 +132,8 @@ const Header = ({ news = [] }) => {
                     : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
                 }`}
               >
+                {/* <span className="ml-1 text-xs opacity-75">({category.count})</span> */}
                 {category.label}
-                <span className="ml-1 text-xs opacity-75">({category.count})</span>
               </button>
             ))}
             
@@ -167,6 +168,13 @@ const Header = ({ news = [] }) => {
                 </div>
                 
                 {/* Logout Button */}
+                <Link
+                  to="/settings"
+                  className="bg-gray-100 text-gray-800 px-4 py-2 rounded hover:bg-gray-200 transition-colors text-sm flex items-center"
+                >
+                  <Settings className="w-4 h-4 ml-1" />
+                  سیٹنگز
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors text-sm"
@@ -217,7 +225,7 @@ const Header = ({ news = [] }) => {
                   }}
                   className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-indigo-600 text-right"
                 >
-                  <span className="text-xs text-gray-500">({category.count})</span>
+                  {/* <span className="text-xs text-gray-500">({category.count})</span> */}
                   <span>{category.label}</span>
                 </button>
               ))}
@@ -235,6 +243,7 @@ const Header = ({ news = [] }) => {
                     <div className="py-2 text-gray-800 font-medium">
                       {user.fullName || `${user.firstName} ${user.lastName}`}
                     </div>
+                    <Link to="/settings" className="block py-2 text-gray-700 font-medium">سیٹنگز</Link>
                     <button 
                       onClick={handleLogout}
                       className="block py-2 text-red-600 font-medium"

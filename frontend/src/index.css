@@ -220,6 +220,40 @@ button {
   border-color: #2563eb;
 }
 
+/* Ticker Animation */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-container {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.ticker {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 20s linear infinite;
+}
+
+.ticker:hover {
+  animation-play-state: paused;
+}
+
+.ticker span {
+  display: inline-block;
+  padding: 0 2rem;
+  color: white;
+  cursor: pointer;
+}
+
+.ticker span:hover {
+  text-decoration: underline;
+}
+
 /* Smooth transitions */
 .transition-colors {
   transition-property: color, background-color, border-color;
@@ -239,3 +273,4 @@ button {
     display: none !important;
   }
 }
+
